@@ -34,14 +34,17 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov -8(%rbp), %rax
-  push %rax
   mov -16(%rbp), %rax
+  push %rax
+  mov $7, %rax
   mov %rax, %rdx
   pop %rax
-  imul %rdx, %rax
-  mov %rax, -24(%rbp)
-  mov -24(%rbp), %rax
+  cmp %rdx, %rax
+  sete %al
+  movzbl %al, %eax
+  test %rax, %rax
+  jz .L0
+  mov $10, %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -49,6 +52,17 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
+  jmp .L1
+.L0:
+  mov $11, %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+.L1:
   mov %rbp, %rsp
   pop %rbp
   ret

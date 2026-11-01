@@ -1,0 +1,1084 @@
+.text
+
+.globl _start
+_start:
+  call main
+  mov $60, %rax
+  xor %rdi, %rdi
+  syscall
+
+.globl main
+main:
+  push %rbp
+  mov %rsp, %rbp
+  sub $16, %rsp
+  mov $16, %r10
+  lea (%rsp), %r11
+  xor %eax, %eax
+.frame_zero_main:
+  mov %rax, (%r11)
+  add $8, %r11
+  sub $8, %r10
+  jnz .frame_zero_main
+
+.Lmain_entry_0:
+  lea _str0(%rip), %rax
+  shl $8, %rax
+  or $4, %rax
+  push %rax
+  pop %rax
+  mov %rax, %r12
+  call _print_value
+  mov %r12, %rax
+  call _decref
+  mov %rbp, %rsp
+  pop %rbp
+  ret
+
+
+.data
+_newline:
+  .byte 10
+_err_jmp:
+  .quad 0
+_lit_lo:
+_str0:
+  .quad 0
+  .quad 12
+  .byte 72,101,108,108,111,44,32,78,117,114,117,33
+_lit_hi:
+_str_true:
+  .quad 0
+  .quad 4
+  .byte 't','r','u','e'
+_str_false:
+  .quad 0
+  .quad 5
+  .byte 'f','a','l','s','e'
+_str_empty:
+  .quad 0
+  .quad 5
+  .byte 'e','m','p','t','y'
+
+.text
+
+.globl _print_int
+_print_int:
+  push %rbp
+  mov %rsp, %rbp
+  sub $40, %rsp
+  mov %rdi, %rax
+  xor %r9, %r9
+  test %rax, %rax
+  jns .pi_prep
+  mov $1, %r9
+  neg %rax
+.pi_prep:
+  mov $10, %rcx
+  lea 39(%rsp), %r8
+  movb $0, (%r8)
+.print_loop:
+  xor %rdx, %rdx
+  div %rcx
+  add $'0', %dl
+  dec %r8
+  mov %dl, (%r8)
+  test %rax, %rax
+  jnz .print_loop
+  test %r9, %r9
+  jz .pi_nosign
+  dec %r8
+  movb $'-', (%r8)
+.pi_nosign:
+  lea 39(%rsp), %rsi
+  sub %r8, %rsi
+  mov %r8, %rdi
+  call _write_string
+  mov %rbp, %rsp
+  pop %rbp
+  ret
+
+.globl _print_value_raw
+_print_value_raw:
+  mov %rax, %rdx
+  and $0xff, %edx
+  cmp $2, %rdx
+  je .raw_int
+  cmp $1, %rdx
+  je .raw_bool
+  cmp $4, %rdx
+  je .raw_str
+  cmp $0, %rdx
+  je .raw_empty
+  jmp .raw_int
+.raw_int:
+  sar $8, %rax
+  mov %rax, %rdi
+  call _print_int
+  ret
+.raw_bool:
+  shr $8, %rax
+  test %rax, %rax
+  jz .raw_bfalse
+  lea _str_true(%rip), %rdi
+  mov $4, %rsi
+  call _write_string
+  ret
+.raw_bfalse:
+  lea _str_false(%rip), %rdi
+  mov $5, %rsi
+  call _write_string
+  ret
+.raw_str:
+  shr $8, %rax
+  mov 8(%rax), %rsi
+  lea 16(%rax), %rdi
+  call _write_string
+  ret
+.raw_empty:
+  lea _str_empty(%rip), %rdi
+  mov $5, %rsi
+  call _write_string
+  ret
+
+.globl _print_value
+_print_value:
+  call _print_value_raw
+  mov $1, %rax
+  mov $1, %rdi
+  lea _newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  ret
+
+.globl _write_string
+_write_string:
+  mov %rdi, %r10
+  mov %rsi, %rdx
+  mov $1, %rdi
+  mov %r10, %rsi
+  mov $1, %rax
+  syscall
+  ret
+
+.globl _checked_div
+_checked_div:
+  test %rcx, %rcx
+  jz .cd_zero
+  xor %rdx, %rdx
+  idiv %rcx
+  ret
+.cd_zero:
+  mov _err_jmp(%rip), %rdx
+  test %rdx, %rdx
+  jz .cd_crash
+  jmp *%rdx
+.cd_crash:
+  mov $0, %rax
+  ret
+
+.globl _checked_mod
+_checked_mod:
+  test %rcx, %rcx
+  jz .cm_zero
+  xor %rdx, %rdx
+  idiv %rcx
+  mov %rdx, %rax
+  ret
+.cm_zero:
+  mov _err_jmp(%rip), %rdx
+  test %rdx, %rdx
+  jz .cm_crash
+  jmp *%rdx
+.cm_crash:
+  mov $0, %rax
+  ret
+
+.globl _read_line
+_read_line:
+  mov $528, %rdi
+  call _alloc
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  lea 16(%rbx), %r12
+  mov $0, %rdi
+  mov %r12, %rsi
+  mov $511, %rdx
+  mov $0, %rax
+  syscall
+  cmp $0, %rax
+  jle .rl_zero
+  lea -1(%r12,%rax), %rcx
+  cmpb $10, (%rcx)
+  jne .rl_len
+  dec %rax
+.rl_len:
+  mov %rax, 8(%rbx)
+  jmp .rl_tag
+.rl_zero:
+  movq $0, 8(%rbx)
+.rl_tag:
+  shl $8, %rbx
+  or $4, %rbx
+  mov %rbx, %rax
+  ret
+
+.globl _concat
+_concat:
+  push %rdi
+  push %rsi
+  mov %rdi, %r8
+  mov %rsi, %r9
+  shr $8, %r8
+  shr $8, %r9
+  mov 8(%r8), %r10
+  mov 8(%r9), %r11
+  lea 16(%r8), %r8
+  lea 16(%r9), %r9
+  push %r8
+  push %r9
+  push %r10
+  push %r11
+  lea 16(%r10,%r11), %rdi
+  call _alloc
+  pop %r11
+  pop %r10
+  pop %r9
+  pop %r8
+  mov %rax, %rdx
+  movq $1, (%rdx)
+  lea (%r10,%r11), %rcx
+  mov %rcx, 8(%rdx)
+  lea 16(%rdx), %rdx
+  xor %rcx, %rcx
+.cpA:
+  cmp %r10, %rcx
+  jae .cpB
+  movb (%r8,%rcx), %al
+  movb %al, (%rdx,%rcx)
+  inc %rcx
+  jmp .cpA
+.cpB:
+  xor %rsi, %rsi
+.cpBloop:
+  cmp %r11, %rsi
+  jae .cpDone
+  movb (%r9,%rsi), %al
+  movb %al, (%rdx,%rcx)
+  inc %rcx
+  inc %rsi
+  jmp .cpBloop
+.cpDone:
+  sub $16, %rdx
+  mov %rdx, %rbx
+  mov 8(%rsp), %rax
+  call _decref
+  mov (%rsp), %rax
+  call _decref
+  add $16, %rsp
+  mov %rbx, %rax
+  shl $8, %rax
+  or $4, %rax
+  ret
+
+.globl _contains
+_contains:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  xor %ebx, %ebx
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  mov %rsi, %r9
+  shr $8, %r9
+  mov 8(%r9), %r11
+  lea 16(%r9), %r9
+  xor %eax, %eax
+  test %r11, %r11
+  jz .ct_found
+  cmp %r11, %r10
+  jb .ct_done
+  xor %r12, %r12
+.ct_outer:
+  mov %r10, %r13
+  sub %r12, %r13
+  cmp %r11, %r13
+  jb .ct_done
+  xor %r14, %r14
+.ct_inner:
+  cmp %r11, %r14
+  jae .ct_found
+  movb (%r8,%r12,1), %al
+  movb (%r9,%r14,1), %dl
+  cmp %dl, %al
+  jne .ct_next
+  inc %r14
+  inc %r12
+  jmp .ct_inner
+.ct_next:
+  inc %r12
+  jmp .ct_outer
+.ct_found:
+  mov $1, %ebx
+.ct_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rsi, %rax
+  call _decref
+  mov %ebx, %eax
+  shl $8, %rax
+  or $2, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _append
+_append:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r9
+  lea 1(%r10), %r11
+  push %r9
+  push %r10
+  push %r11
+  lea 88(,%r10,8), %rdi
+  call _alloc
+  pop %r11
+  pop %r10
+  pop %r9
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r11, 8(%rbx)
+  xor %r12, %r12
+.ap_cp:
+  cmp %r10, %r12
+  jae .ap_val
+  mov (%r9,%r12,8), %rax
+  call _incref
+  mov %rax, 16(%rbx,%r12,8)
+  inc %r12
+  jmp .ap_cp
+.ap_val:
+  mov %rsi, %rax
+  mov %rax, 16(%rbx,%r10,8)
+  mov %rbx, %rax
+  shl $8, %rax
+  or $5, %rax
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _substring
+_substring:
+  push %rbx
+  push %r12
+  push %r13
+  push %rdi
+  mov %rsi, %r9
+  sar $8, %r9
+  mov %rdx, %r11
+  sar $8, %r11
+  push %r9
+  push %r11
+  mov %r11, %r13
+  sub %r9, %r13
+  test %r13, %r13
+  jns .ss_alloc
+  xor %r13, %r13
+.ss_alloc:
+  lea 17(%r13), %rdi
+  call _alloc
+  mov %rax, %rbx
+  pop %r11
+  pop %r9
+  pop %rdi
+  movq $1, (%rbx)
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  xor %r12, %r12
+  cmp %r12, %r9
+  jge .ss_sok
+  xor %r9, %r9
+.ss_sok:
+  cmp %r10, %r9
+  jle .ss_sok2
+  mov %r10, %r9
+.ss_sok2:
+  cmp %r12, %r11
+  jge .ss_eok
+  xor %r11, %r11
+.ss_eok:
+  cmp %r10, %r11
+  jle .ss_eok2
+  mov %r10, %r11
+.ss_eok2:
+  mov %r11, %r13
+  sub %r9, %r13
+  test %r13, %r13
+  jns .ss_len
+  xor %r13, %r13
+.ss_len:
+  mov %r13, 8(%rbx)
+  xor %r12, %r12
+.ss_cp:
+  cmp %r13, %r12
+  jae .ss_done
+  movb (%r8,%r9,1), %al
+  movb %al, 16(%rbx,%r12,1)
+  inc %r12
+  inc %r9
+  jmp .ss_cp
+.ss_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rbx, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _upper
+_upper:
+  push %rbx
+  push %r12
+  push %r13
+  push %rdi
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  push %r10
+  lea 17(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %rdi
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r10, 8(%rbx)
+  mov %rdi, %r8
+  shr $8, %r8
+  lea 16(%r8), %r8
+  xor %r12, %r12
+.up_loop:
+  cmp %r10, %r12
+  jae .up_done
+  movb (%r8,%r12,1), %al
+  cmpb $'a', %al
+  jb .up_store
+  cmpb $'z', %al
+  ja .up_store
+  sub $32, %al
+.up_store:
+  movb %al, 16(%rbx,%r12,1)
+  inc %r12
+  jmp .up_loop
+.up_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rbx, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _lower
+_lower:
+  push %rbx
+  push %r12
+  push %r13
+  push %rdi
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  push %r10
+  lea 17(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %rdi
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r10, 8(%rbx)
+  mov %rdi, %r8
+  shr $8, %r8
+  lea 16(%r8), %r8
+  xor %r12, %r12
+.lo_loop:
+  cmp %r10, %r12
+  jae .lo_done
+  movb (%r8,%r12,1), %al
+  cmpb $'A', %al
+  jb .lo_store
+  cmpb $'Z', %al
+  ja .lo_store
+  add $32, %al
+.lo_store:
+  movb %al, 16(%rbx,%r12,1)
+  inc %r12
+  jmp .lo_loop
+.lo_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rbx, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _index
+_index:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  mov $-1, %ebx
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  mov %rsi, %r9
+  shr $8, %r9
+  mov 8(%r9), %r11
+  lea 16(%r9), %r9
+  test %r11, %r11
+  jz .ix_found
+  cmp %r11, %r10
+  jb .ix_done
+  xor %r12, %r12
+.ix_outer:
+  mov %r12, %r15
+  mov %r10, %r13
+  sub %r12, %r13
+  cmp %r11, %r13
+  jb .ix_done
+  xor %r14, %r14
+.ix_inner:
+  cmp %r11, %r14
+  jae .ix_found
+  movb (%r8,%r12,1), %al
+  movb (%r9,%r14,1), %dl
+  cmp %dl, %al
+  jne .ix_next
+  inc %r14
+  inc %r12
+  jmp .ix_inner
+.ix_next:
+  inc %r12
+  jmp .ix_outer
+.ix_found:
+  mov %r15d, %ebx
+.ix_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rsi, %rax
+  call _decref
+  movslq %ebx, %rax
+  shl $8, %rax
+  or $2, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _to_string
+_to_string:
+  push %rbx
+  push %r12
+  push %r13
+  mov %rdi, %rax
+  sar $8, %rax
+  xor %r8, %r8
+  test %rax, %rax
+  jns .ts_nonneg
+  mov $1, %r8
+  neg %rax
+.ts_nonneg:
+  sub $48, %rsp
+  lea 47(%rsp), %r9
+  movb $0, (%r9)
+  mov $10, %rcx
+  xor %r10, %r10
+.ts_loop:
+  xor %rdx, %rdx
+  div %rcx
+  add $'0', %dl
+  dec %r9
+  mov %dl, (%r9)
+  inc %r10
+  test %rax, %rax
+  jnz .ts_loop
+  test %r8, %r8
+  jz .ts_nosign
+  dec %r9
+  movb $'-', (%r9)
+  inc %r10
+.ts_nosign:
+  push %r9
+  push %r10
+  lea 32(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %r9
+  mov %rax, %r12
+  movq $1, (%r12)
+  mov %r10, 8(%r12)
+  xor %rcx, %rcx
+.ts_cp:
+  cmp %r10, %rcx
+  jae .ts_done
+  movb (%r9,%rcx,1), %al
+  movb %al, 16(%r12,%rcx,1)
+  inc %rcx
+  jmp .ts_cp
+.ts_done:
+  add $48, %rsp
+  mov %r12, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _read_file
+_read_file:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  push %rdi
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  push %r8
+  push %r10
+  lea 1(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %r8
+  mov %rax, %r9
+  xor %rcx, %rcx
+.rf_cp:
+  cmp %r10, %rcx
+  jae .rf_cpdone
+  movb (%r8,%rcx,1), %al
+  movb %al, (%r9,%rcx,1)
+  inc %rcx
+  jmp .rf_cp
+.rf_cpdone:
+  movb $0, (%r9,%r10,1)
+  mov $2, %rax
+  mov %r9, %rdi
+  xor %rsi, %rsi
+  xor %rdx, %rdx
+  syscall
+  test %rax, %rax
+  js .rf_empty
+  mov %rax, %rbx
+  sub $152, %rsp
+  mov $5, %rax
+  mov %rbx, %rdi
+  mov %rsp, %rsi
+  syscall
+  test %rax, %rax
+  jne .rf_closerem
+  mov 48(%rsp), %r10
+  push %r10
+  lea 32(%r10), %rdi
+  call _alloc
+  pop %r10
+  mov %rax, %r12
+  movq $1, (%r12)
+  mov %r10, 8(%r12)
+  mov $0, %rax
+  mov %rbx, %rdi
+  lea 16(%r12), %rsi
+  mov %r10, %rdx
+  syscall
+  mov $3, %rax
+  mov %rbx, %rdi
+  syscall
+  add $152, %rsp
+  jmp .rf_mkval
+.rf_closerem:
+  mov $3, %rax
+  mov %rbx, %rdi
+  syscall
+  add $152, %rsp
+.rf_empty:
+  mov $16, %rdi
+  call _alloc
+  mov %rax, %r12
+  movq $1, (%r12)
+  movq $0, 8(%r12)
+.rf_mkval:
+  mov (%rsp), %rax
+  call _decref
+  add $8, %rsp
+  mov %r12, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _write_file
+_write_file:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  push %rdi
+  push %rsi
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  push %r8
+  push %r10
+  lea 1(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %r8
+  mov %rax, %r9
+  xor %rcx, %rcx
+.wf_cp:
+  cmp %r10, %rcx
+  jae .wf_cpdone
+  movb (%r8,%rcx,1), %al
+  movb %al, (%r9,%rcx,1)
+  inc %rcx
+  jmp .wf_cp
+.wf_cpdone:
+  movb $0, (%r9,%r10,1)
+  mov (%rsp), %rax
+  mov %rax, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  lea 16(%r8), %r8
+  push %r8
+  push %r10
+  mov $2, %rax
+  mov %r9, %rdi
+  mov $0x241, %rsi
+  mov $0644, %rdx
+  syscall
+  pop %r10
+  pop %r8
+  test %rax, %rax
+  js .wf_fail
+  mov %rax, %rbx
+  mov $1, %rax
+  mov %rbx, %rdi
+  mov %r8, %rsi
+  mov %r10, %rdx
+  syscall
+  mov $3, %rax
+  mov %rbx, %rdi
+  syscall
+  mov $2, %r12
+  jmp .wf_done
+.wf_fail:
+  mov $-254, %r12
+.wf_done:
+  mov 8(%rsp), %rax
+  call _decref
+  mov (%rsp), %rax
+  call _decref
+  add $16, %rsp
+  mov %r12, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _reverse
+_reverse:
+  push %rbx
+  push %r12
+  push %r13
+  push %rdi
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r10
+  push %r10
+  lea 17(%r10), %rdi
+  call _alloc
+  pop %r10
+  pop %rdi
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r10, 8(%rbx)
+  mov %rdi, %r8
+  shr $8, %r8
+  lea 16(%r8), %r8
+  xor %r12, %r12
+.rv_loop:
+  cmp %r10, %r12
+  jae .rv_done
+  mov %r10, %r13
+  sub %r12, %r13
+  dec %r13
+  movb (%r8,%r13,1), %al
+  movb %al, 16(%rbx,%r12,1)
+  inc %r12
+  jmp .rv_loop
+.rv_done:
+  mov %rdi, %rax
+  call _decref
+  mov %rbx, %rax
+  shl $8, %rax
+  or $4, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+_parse_int:
+  mov %rdi, %r10
+  mov %rsi, %r11
+  xor %rcx, %rcx
+  mov $1, %r8
+  xor %r9, %r9
+.pl_skip:
+  cmp %r11, %r9
+  jae .pl_done
+  movb (%r10,%r9), %al
+  cmpb $' ', %al
+  jne .pl_sign
+  inc %r9
+  jmp .pl_skip
+.pl_sign:
+  cmpb $'-', %al
+  jne .pl_digits
+  mov $-1, %r8
+  inc %r9
+.pl_digits:
+  cmp %r11, %r9
+  jae .pl_done
+  movb (%r10,%r9), %al
+  sub $'0', %al
+  cmpb $9, %al
+  ja .pl_done
+  imul $10, %rcx
+  movsbl %al, %eax
+  add %rax, %rcx
+  inc %r9
+  jmp .pl_digits
+.pl_done:
+  imul %r8, %rcx
+  mov %rcx, %rax
+  ret
+
+.globl _alloc
+_alloc:
+  add $15, %rdi
+  and $-16, %rdi
+  lea 32(%rdi), %r8
+  mov _gc_free(%rip), %r9
+  xor %r10, %r10
+.af_loop:
+  test %r9, %r9
+  jz .af_bump
+  cmp 8(%r9), %r8
+  jbe .af_take
+  mov %r9, %r10
+  mov 24(%r9), %r9
+  jmp .af_loop
+.af_take:
+  test %r10, %r10
+  jz .af_head
+  mov 24(%r9), %rax
+  mov %rax, 24(%r10)
+  jmp .af_use
+.af_head:
+  mov 24(%r9), %rax
+  mov %rax, _gc_free(%rip)
+.af_use:
+  movq $0, 16(%r9)
+  lea 32(%r9), %rax
+  ret
+.af_bump:
+  mov _gc_top(%rip), %r9
+  lea (%r9,%r8), %r10
+  cmp _gc_hi(%rip), %r10
+  jbe .af_bumpok
+  jmp .af_fail
+.af_bumpok:
+  mov %r8, 8(%r9)
+  mov %r10, _gc_top(%rip)
+  lea 32(%r9), %rax
+  ret
+.af_fail:
+  xor %rax, %rax
+  ret
+
+.globl _incref
+_incref:
+  push %rdx
+  mov %rax, %rdx
+  and $0xff, %edx
+  cmp $4, %rdx
+  je .inc_hdr
+  cmp $5, %rdx
+  je .inc_hdr
+  cmp $6, %rdx
+  je .inc_hdr
+  jmp .inc_done
+.inc_hdr:
+  mov %rax, %rdx
+  shr $8, %rdx
+  lea _lit_lo(%rip), %rcx
+  cmp %rcx, %rdx
+  jb .inc_heap
+  lea _lit_hi(%rip), %rcx
+  cmp %rcx, %rdx
+  jae .inc_heap
+  jmp .inc_done
+.inc_heap:
+  incq (%rdx)
+.inc_done:
+  pop %rdx
+  ret
+
+.globl _decref
+_decref:
+  test %rax, %rax
+  jz .dr_done
+  mov %rax, %rdx
+  and $0xff, %edx
+  cmp $4, %rdx
+  je .dr_obj
+  cmp $5, %rdx
+  je .dr_obj
+  cmp $6, %rdx
+  je .dr_obj
+  jmp .dr_done
+.dr_obj:
+  shr $8, %rax
+  lea _lit_lo(%rip), %rcx
+  cmp %rcx, %rax
+  jb .dr_heap
+  lea _lit_hi(%rip), %rcx
+  cmp %rcx, %rax
+  jae .dr_heap
+  jmp .dr_done
+.dr_heap:
+  cmpq $0, (%rax)
+  jle .dr_done
+  decq (%rax)
+  jg .dr_done
+  push %rbx
+  push %r12
+  push %r13
+  lea -32(%rax), %rbx
+  push %rdx
+  cmp $5, %rdx
+  je .dr_list
+  cmp $6, %rdx
+  je .dr_map
+  jmp .dr_pushfree
+.dr_list:
+  mov 8(%rax), %rcx
+  lea 16(%rax), %r12
+  xor %r13, %r13
+  jmp .dr_lcheck
+.dr_lbody:
+  mov (%r12,%r13,8), %rax
+  push %rcx
+  push %r12
+  push %r13
+  call _decref
+  pop %r13
+  pop %r12
+  pop %rcx
+  inc %r13
+.dr_lcheck:
+  cmp %r13, %rcx
+  ja .dr_lbody
+  jmp .dr_pushfree
+.dr_map:
+  mov 8(%rax), %rcx
+  lea 16(%rax), %r12
+  xor %r13, %r13
+  jmp .dr_mcheck
+.dr_mbody:
+  lea (%r13,%r13), %r14
+  mov (%r12,%r14,8), %rax
+  push %rcx
+  push %r12
+  push %r13
+  push %r14
+  call _decref
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rcx
+  mov 8(%r12,%r14,8), %rax
+  push %rcx
+  push %r12
+  push %r13
+  push %r14
+  call _decref
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rcx
+  inc %r13
+.dr_mcheck:
+  cmp %r13, %rcx
+  ja .dr_mbody
+.dr_pushfree:
+  pop %rdx
+  mov _gc_free(%rip), %rax
+  mov %rax, 24(%rbx)
+  mov %rbx, _gc_free(%rip)
+  pop %r13
+  pop %r12
+  pop %rbx
+.dr_done:
+  ret
+
+.data
+.align 8
+_gc_heap:
+  .zero 1048576
+_gc_top:
+  .quad _gc_heap
+_gc_free:
+  .quad 0
+_gc_lo:
+  .quad _gc_heap
+_gc_hi:
+  .quad _gc_heap + 1048576
+.text

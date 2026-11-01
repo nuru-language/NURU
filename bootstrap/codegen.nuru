@@ -838,6 +838,35 @@ create index_of using lst, name {
     give 0
 }
 
+create setcc_for using op {
+    when (str_eq with op, "is") is 1 {
+        give "e"
+    }
+    otherwise {
+        when (str_eq with op, "is not") is 1 {
+            give "ne"
+        }
+        otherwise {
+            when (str_eq with op, "is below") is 1 {
+                give "l"
+            }
+            otherwise {
+                when (str_eq with op, "is above") is 1 {
+                    give "g"
+                }
+                otherwise {
+                    when (str_eq with op, "is at most") is 1 {
+                        give "le"
+                    }
+                    otherwise {
+                        give "ge"
+                    }
+                }
+            }
+        }
+    }
+}
+
 create gen_expr using node, vars {
     when (str_eq with node.kind, "int") is 1 {
         make v be to_string with node.value
@@ -886,7 +915,23 @@ create gen_expr using node, vars {
                 }
             }
             otherwise {
-                give "  xor %eax, %eax\n"
+                when (str_eq with node.kind, "cmp") is 1 {
+                    make cl be gen_expr with node.left, vars
+                    make cr be gen_expr with node.right, vars
+                    make c2 be concat with cl, "  push %rax\n"
+                    make c3 be concat with c2, cr
+                    make c4 be concat with c3, "  mov %rax, %rdx\n"
+                    make c5 be concat with c4, "  pop %rax\n"
+                    make c6 be concat with c5, "  cmp %rdx, %rax\n"
+                    make cc be setcc_for with node.op
+                    make c7 be concat with c6, "  set"
+                    make c8 be concat with c7, cc
+                    make c9 be concat with c8, " %al\n"
+                    give concat with c9, "  movzbl %al, %eax\n"
+                }
+                otherwise {
+                    give "  xor %eax, %eax\n"
+                }
             }
         }
     }
@@ -899,13 +944,13 @@ create gen_show using expr, vars {
     give concat with s1, "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
 }
 
-create gen_program using progs {
-    make code changeable ""
-    make vars be []
-    for each st in progs {
+create gen_block using stmts, vars, ctr {
+    make asm changeable ""
+    make c changeable ctr
+    for each st in stmts {
         when (str_eq with st.kind, "show") is 1 {
             make gs be gen_show with st.expr, vars
-            change code to concat with code, gs
+            change asm to concat with asm, gs
         }
         otherwise {
             when (str_eq with st.kind, "make") is 1 {
@@ -919,20 +964,51 @@ create gen_program using progs {
                 make st1 be concat with ve, "  mov %rax, -"
                 make st2 be concat with st1, off
                 make st3 be concat with st2, "(%rbp)\n"
-                change code to concat with code, st3
+                change asm to concat with asm, st3
+            }
+            otherwise {
+                when (str_eq with st.kind, "when") is 1 {
+                    make cc2 be to_string with c
+                    change c to c plus 1
+                    make ce be to_string with c
+                    change c to c plus 1
+                    make cnd be gen_expr with st.cond, vars
+                    make c1 be concat with cnd, "  test %rax, %rax\n  jz .L"
+                    make c2 be concat with c1, cc2
+                    make c3 be concat with c2, "\n"
+                    make tb be gen_block with st.then, vars, c
+                    make c4 be concat with c3, tb.asm
+                    make c5 be concat with c4, "  jmp .L"
+                    make c6 be concat with c5, ce
+                    make c7 be concat with c6, "\n.L"
+                    make c8 be concat with c7, cc2
+                    make c9 be concat with c8, ":\n"
+                    make eb be gen_block with st.els, vars, tb.count
+                    make c10 be concat with c9, eb.asm
+                    make c11 be concat with c10, ".L"
+                    make c12 be concat with c11, ce
+                    make c13 be concat with c12, ":\n"
+                    change asm to concat with asm, c13
+                    change c to eb.count
+                }
             }
         }
     }
+    give map [ asm is asm, count is c ]
+}
+
+create gen_program using progs {
+    make r be gen_block with progs, [], 0
     make rt be "print_int:\n  push %rbp\n  mov %rsp, %rbp\n  sub $48, %rsp\n  mov %rdi, %rax\n  xor %r9, %r9\n  test %rax, %rax\n  jns pi_prep\n  mov $1, %r9\n  neg %rax\npi_prep:\n  mov $10, %rcx\n  lea 47(%rsp), %r8\n  movb $0, (%r8)\nprint_loop:\n  xor %rdx, %rdx\n  div %rcx\n  add $'0', %dl\n  dec %r8\n  mov %dl, (%r8)\n  test %rax, %rax\n  jnz print_loop\n  test %r9, %r9\n  jz pi_nosign\n  dec %r8\n  movb $'-', (%r8)\npi_nosign:\n  mov %r8, %rsi\n  lea 47(%rsp), %rdx\n  sub %r8, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
     make head be ".text\n.globl _start\n_start:\n  call main\n  mov $60, %rax\n  xor %rdi, %rdi\n  syscall\nmain:\n  push %rbp\n  mov %rsp, %rbp\n  sub $64, %rsp\n"
     make tail be "  mov %rbp, %rsp\n  pop %rbp\n  ret\n.data\nnewline:\n  .byte 10\n.text\n"
-    make hc be concat with head, code
+    make hc be concat with head, r.asm
     make tc be concat with hc, tail
     give concat with tc, rt
 }
 
 create main {
-    make src be "make x be 5\nshow x\nmake y be x plus 2\nshow y\nmake z be x times y\nshow z\n"
+    make src be "make x be 5\nshow x\nmake y be x plus 2\nshow y\nwhen y is 7 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs
