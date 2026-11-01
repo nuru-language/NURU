@@ -56,11 +56,11 @@ create lex using src {
                     change i to i plus 1
                 }
                 otherwise {
-                    when is_digit with c is 1 {
+                    when (is_digit with c) is 1 {
                         make start be i
                         while i is below n {
                             make c2 be ord with substring with src, i, i plus 1
-                            when is_digit with c2 is 1 {
+                            when (is_digit with c2) is 1 {
                                 change i to i plus 1
                             }
                             otherwise {
@@ -72,11 +72,11 @@ create lex using src {
                         add make_token with 1, nv, line to tokens
                     }
                     otherwise {
-                        when is_alpha with c is 1 {
+                        when (is_alpha with c) is 1 {
                             make start be i
                             while i is below n {
                                 make c2 be ord with substring with src, i, i plus 1
-                                when is_alpha with c2 is 1 {
+                                when (is_alpha with c2) is 1 {
                                     change i to i plus 1
                                 }
                                 otherwise {
@@ -126,7 +126,7 @@ create lex using src {
 }
 
 create main {
-    make sample be "create main { show \"hi\" }\n"
+    make sample be "make n be 42\nshow \"s\"\n"
     make toks be lex with sample
     for each tok in toks {
         show tok.type

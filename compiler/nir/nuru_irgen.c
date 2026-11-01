@@ -309,7 +309,7 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
                         emit_stmt(irgen, node->if_stmt.then_branch);
                     }
                 }
-                nir_emit(then_block, NIR_JUMP, NULL, NULL, end_block, 0);
+                nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, end_block, 0);
 
                 irgen->current_block = else_block;
                 if (node->if_stmt.else_branch) {
@@ -321,7 +321,7 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
                         emit_stmt(irgen, node->if_stmt.else_branch);
                     }
                 }
-                nir_emit(else_block, NIR_JUMP, NULL, NULL, end_block, 0);
+                nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, end_block, 0);
 
                 irgen->current_block = end_block;
             }
