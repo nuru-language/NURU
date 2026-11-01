@@ -935,7 +935,7 @@ create gen_expr using node, vars {
                     make arglist be node.args
                     make a0 be arglist[0]
                     make ae be gen_expr with a0, vars
-                    give concat with ae, "  mov (%rax), %rax\n"
+                    give concat with ae, "  mov -8(%rax), %rax\n"
                 }
                 otherwise {
                     make arglist be node.args
