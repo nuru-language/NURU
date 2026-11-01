@@ -647,6 +647,21 @@ static ASTNode* parse_postfix(Parser* parser) {
         expr = ast_create_member_access(expr, prop, parser->previous.line, parser->previous.column);
     }
 
+    while (match(parser, TOKEN_LBRACKET)) {
+        ASTNode* idx = parse_expression(parser);
+        if (!idx) {
+            ast_free(expr);
+            return NULL;
+        }
+        if (!match(parser, TOKEN_RBRACKET)) {
+            error_at_current(parser, "Expected ']' after index");
+            ast_free(expr);
+            ast_free(idx);
+            return NULL;
+        }
+        expr = ast_create_index_access(expr, idx, parser->previous.line, parser->previous.column);
+    }
+
     return expr;
 }
 

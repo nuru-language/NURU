@@ -204,6 +204,7 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_ALLOC_LIST: return "ALLOC_LIST";
         case NIR_LOAD_LIST_LEN: return "LOAD_LIST_LEN";
         case NIR_LOAD_ELT: return "LOAD_ELT";
+        case NIR_LOAD_ELT_EXPR: return "LOAD_ELT_EXPR";
         case NIR_ALLOC_MAP: return "ALLOC_MAP";
         case NIR_LOAD_MAP_FIELD: return "LOAD_MAP_FIELD";
         case NIR_APPEND: return "APPEND";

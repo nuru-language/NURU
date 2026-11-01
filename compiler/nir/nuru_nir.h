@@ -52,6 +52,7 @@ typedef enum {
     NIR_ALLOC_LIST,
     NIR_LOAD_LIST_LEN,
     NIR_LOAD_ELT,
+    NIR_LOAD_ELT_EXPR,
     NIR_ALLOC_MAP,
     NIR_LOAD_MAP_FIELD,
     NIR_APPEND,
