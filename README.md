@@ -179,4 +179,6 @@ Stage 2 now parses all major statement forms: `make`/`show`/`give`, `create` fun
 
 Stage 3 is a semantic checker written in Nuru (`analyze_program`): it collects all declared names (variables, function names, parameters, loop variables) and reports references to undeclared identifiers, returning declaration/error counts. Covered by `tests/native/cases/parser_semantic`.
 
-Remaining bootstrap work (a standing project): code generation written in Nuru, plus a module/import mechanism and wider integer/string support.
+Stage 4 is a minimal code generator (`bootstrap/codegen.nuru`): it emits x86-64 assembly for `show <int-expr>` programs (integer literals and `plus`/`minus`/`times`), including a run-time `print_int` routine. The output assembles with `as`, links with `ld`, and runs correctly. The full pipeline — lexer → parser → semantic → codegen, all in Nuru — now compiles a Nuru subset into working executables. This is covered by `tests/native/cases/codegen`.
+
+Remaining bootstrap work (a standing project): extending the code generator to more statements/expressions (assignments, control flow, function calls, lists/maps), plus a module/import mechanism and wider integer/string support.

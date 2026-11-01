@@ -1,0 +1,101 @@
+.text
+.globl _start
+_start:
+  call main
+  mov $60, %rax
+  xor %rdi, %rdi
+  syscall
+main:
+  push %rbp
+  mov %rsp, %rbp
+  mov $42, %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov $3, %rax
+  push %rax
+  mov $4, %rax
+  mov %rax, %rdx
+  pop %rax
+  add %rdx, %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov $10, %rax
+  push %rax
+  mov $2, %rax
+  mov %rax, %rdx
+  pop %rax
+  sub %rdx, %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov $6, %rax
+  push %rax
+  mov $7, %rax
+  mov %rax, %rdx
+  pop %rax
+  imul %rdx, %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov %rbp, %rsp
+  pop %rbp
+  ret
+.data
+newline:
+  .byte 10
+.text
+print_int:
+  push %rbp
+  mov %rsp, %rbp
+  sub $48, %rsp
+  mov %rdi, %rax
+  xor %r9, %r9
+  test %rax, %rax
+  jns pi_prep
+  mov $1, %r9
+  neg %rax
+pi_prep:
+  mov $10, %rcx
+  lea 47(%rsp), %r8
+  movb $0, (%r8)
+print_loop:
+  xor %rdx, %rdx
+  div %rcx
+  add $'0', %dl
+  dec %r8
+  mov %dl, (%r8)
+  test %rax, %rax
+  jnz print_loop
+  test %r9, %r9
+  jz pi_nosign
+  dec %r8
+  movb $'-', (%r8)
+pi_nosign:
+  mov %r8, %rsi
+  lea 47(%rsp), %rdx
+  sub %r8, %rdx
+  mov $1, %rax
+  mov $1, %rdi
+  syscall
+  mov %rbp, %rsp
+  pop %rbp
+  ret
+
