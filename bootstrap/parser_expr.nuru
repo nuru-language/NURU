@@ -1,0 +1,143 @@
+# bootstrap/parser_expr.nuru
+# Stage 2 (subset): a recursive-descent expression parser written in Nuru.
+# Parses integer/identifier primaries and + - * / with parentheses into a
+# nested map-based AST (kind: "int" / "id" / "binop").
+
+create parse_primary using toks, p {
+    make tok be toks[p]
+    when tok.type is 1 {
+        give map [ node is map [ kind is "int", value is tok.value ], pos is p plus 1 ]
+    }
+    otherwise {
+        when tok.type is 0 {
+            give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+        }
+        otherwise {
+            when tok.type is 3 {
+                when tok.value is "(" {
+                    make r be parse_expr with toks, p plus 1
+                    give map [ node is r.node, pos is r.pos plus 1 ]
+                }
+                otherwise {
+                    give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+                }
+            }
+            otherwise {
+                give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+            }
+        }
+    }
+}
+
+create parse_mul using toks, p {
+    make l changeable parse_primary with toks, p
+    make n changeable l.pos
+    make L be len with toks
+    make go changeable 1
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            make tok be toks[n]
+            when tok.type is 3 {
+                when tok.value is "*" {
+                    make r be parse_primary with toks, n plus 1
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "*", left is l.node, right is r.node ]
+                }
+                otherwise {
+                    when tok.value is "/" {
+                        make r be parse_primary with toks, n plus 1
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "/", left is l.node, right is r.node ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                change go to 0
+            }
+        }
+    }
+    give map [ node is l.node, pos is n ]
+}
+
+create parse_add using toks, p {
+    make l changeable parse_mul with toks, p
+    make n changeable l.pos
+    make L be len with toks
+    make go changeable 1
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            make tok be toks[n]
+            when tok.type is 3 {
+                when tok.value is "+" {
+                    make r be parse_mul with toks, n plus 1
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "+", left is l.node, right is r.node ]
+                }
+                otherwise {
+                    when tok.value is "-" {
+                        make r be parse_mul with toks, n plus 1
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "-", left is l.node, right is r.node ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                change go to 0
+            }
+        }
+    }
+    give map [ node is l.node, pos is n ]
+}
+
+create parse_expr using toks, p {
+    give parse_add with toks, p
+}
+
+create show_ast using node, depth {
+    make indent be ""
+    make i changeable 0
+    while i is below depth {
+        make indent be concat with indent, "  "
+        change i to i plus 1
+    }
+    make line be concat with indent, node.kind
+    show line
+    when node.kind is "binop" {
+        make l2 be concat with indent, "op="
+        make l2 be concat with l2, node.op
+        show l2
+        show_ast with node.left, depth plus 1
+        show_ast with node.right, depth plus 1
+    }
+    otherwise {
+        when node.kind is "id" {
+            make l2 be concat with indent, node.value
+            show l2
+        }
+        otherwise {
+            when node.kind is "int" {
+                make l2 be concat with indent, to_string with node.value
+                show l2
+            }
+        }
+    }
+}
+
+create main {
+    make src be "3 + 4 * (x - 1)"
+    make toks be lex with src
+    make res be parse_expr with toks, 0
+    show_ast with res.node, 0
+}
