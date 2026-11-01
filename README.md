@@ -118,12 +118,12 @@ All compiler stages live under `compiler/`:
 
 The generated programs are self-contained and use only Linux system calls (`write`, `read`, `exit`):
 
-- Values are 64-bit words; the high bit tags string/list/map pointers from integers.
-- Strings are length-prefixed descriptors; lists and maps are heap objects with a length/count header.
-- The heap is a 1 MiB managed region with a **conservative mark-and-sweep garbage collector** (`_gc_collect`): it marks reachable objects by scanning the machine stack (roots) and transitively through object payloads, then sweeps unmarked allocations back onto a free list that `_alloc` reuses. Collection triggers automatically when bump allocation exhausts the region.
-- `show` dispatches on the tag bit through `_print_value`; divide-by-zero raises a catchable error for `attempt`/`recover`.
+- Values are 64-bit words with an **8-bit type tag in the low byte** and a 56-bit payload (bits 8-63). Integers and booleans carry their value in the payload; strings, lists, and maps carry a pointer.
+- Heap objects share a uniform header: `[ref_count][length/count][payload]`. String literals live in `.data` with the same layout and are exempt from reference counting via a literal-region range check.
+- Memory is managed by **reference counting** (`_incref`/`_decref`) over a bump+free-list allocator: when an object's count reaches zero it is returned to the free list and its children are released recursively.
+- `show` dispatches on the tag byte through `_print_value`; divide-by-zero raises a catchable error for `attempt`/`recover`.
 
-The memory model is a working subset of `docs/language/runtime-memory-spec-v0.1.md` (single-bit tagging rather than an 8-bit tag field; no reference counting).
+This implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md`.
 
 ## Testing
 
@@ -156,4 +156,4 @@ All documented language features are implemented and covered by native tests: fu
 
 Built-in functions: `show`, `ask` (read a line from stdin), `len` (string/list/map length), `abs`, `min`, `max`, `to_number` (parse a string to an integer), `concat` (concatenate two strings), `ord` (first char code of a string), `chr` (integer → one-character string). String comparison (`is` / `is not`) works via literal interning (identical string constants share one descriptor).
 
-The runtime implements a working subset of `docs/language/runtime-memory-spec-v0.1.md`: tagged values, a managed heap with a conservative mark-and-sweep GC, and catchable divide-by-zero. Still on the roadmap: an 8-bit tag field and reference counting per the full spec, a wider standard library, and self-hosting/bootstrap.
+The runtime implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md` plus catchable divide-by-zero. Still on the roadmap: a wider standard library and self-hosting/bootstrap.
