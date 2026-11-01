@@ -30,7 +30,7 @@ create parse_primary using toks, p {
 }
 
 create parse_mul using toks, p {
-    make l changeable parse_primary with toks, p
+    make l changeable parse_primary with toks, 0
     make n changeable l.pos
     make L be len with toks
     make go changeable 1
