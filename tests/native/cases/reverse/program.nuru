@@ -1,0 +1,6 @@
+create main {
+    show reverse with "abc"
+    show reverse with "hello world"
+    show reverse with ""
+    show reverse with "a"
+}

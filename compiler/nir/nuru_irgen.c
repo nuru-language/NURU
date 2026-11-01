@@ -165,6 +165,11 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
                     emit(irgen, NIR_TO_STRING, NULL, NULL, NULL);
                     break;
                 }
+                if (strcmp(node->function_call.name, "reverse") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit(irgen, NIR_REVERSE, NULL, NULL, NULL);
+                    break;
+                }
                 if (strcmp(node->function_call.name, "read_file") == 0) {
                     emit_expr(irgen, node->function_call.arguments[0]);
                     emit(irgen, NIR_READ_FILE, NULL, NULL, NULL);

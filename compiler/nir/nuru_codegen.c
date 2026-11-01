@@ -614,6 +614,12 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  push %%rax\n");
                     break;
 
+                case NIR_REVERSE:
+                    fprintf(cg->out, "  pop %%rdi\n");
+                    fprintf(cg->out, "  call _reverse\n");
+                    fprintf(cg->out, "  push %%rax\n");
+                    break;
+
                 case NIR_READ_FILE:
                     fprintf(cg->out, "  pop %%rdi\n");
                     fprintf(cg->out, "  call _read_file\n");
@@ -1618,6 +1624,48 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  mov %%r12, %%rax\n");
     fprintf(cg->out, "  pop %%r15\n");
     fprintf(cg->out, "  pop %%r14\n");
+    fprintf(cg->out, "  pop %%r13\n");
+    fprintf(cg->out, "  pop %%r12\n");
+    fprintf(cg->out, "  pop %%rbx\n");
+    fprintf(cg->out, "  ret\n");
+
+    fprintf(cg->out, "\n.globl _reverse\n");
+    fprintf(cg->out, "_reverse:\n");
+    fprintf(cg->out, "  push %%rbx\n");
+    fprintf(cg->out, "  push %%r12\n");
+    fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  push %%rdi\n");
+    fprintf(cg->out, "  mov %%rdi, %%r8\n");
+    fprintf(cg->out, "  shr $8, %%r8\n");
+    fprintf(cg->out, "  mov 8(%%r8), %%r10\n");
+    fprintf(cg->out, "  push %%r10\n");
+    fprintf(cg->out, "  lea 17(%%r10), %%rdi\n");
+    fprintf(cg->out, "  call _alloc\n");
+    fprintf(cg->out, "  pop %%r10\n");
+    fprintf(cg->out, "  pop %%rdi\n");
+    fprintf(cg->out, "  mov %%rax, %%rbx\n");
+    fprintf(cg->out, "  movq $1, (%%rbx)\n");
+    fprintf(cg->out, "  mov %%r10, 8(%%rbx)\n");
+    fprintf(cg->out, "  mov %%rdi, %%r8\n");
+    fprintf(cg->out, "  shr $8, %%r8\n");
+    fprintf(cg->out, "  lea 16(%%r8), %%r8\n");
+    fprintf(cg->out, "  xor %%r12, %%r12\n");
+    fprintf(cg->out, ".rv_loop:\n");
+    fprintf(cg->out, "  cmp %%r10, %%r12\n");
+    fprintf(cg->out, "  jae .rv_done\n");
+    fprintf(cg->out, "  mov %%r10, %%r13\n");
+    fprintf(cg->out, "  sub %%r12, %%r13\n");
+    fprintf(cg->out, "  dec %%r13\n");
+    fprintf(cg->out, "  movb (%%r8,%%r13,1), %%al\n");
+    fprintf(cg->out, "  movb %%al, 16(%%rbx,%%r12,1)\n");
+    fprintf(cg->out, "  inc %%r12\n");
+    fprintf(cg->out, "  jmp .rv_loop\n");
+    fprintf(cg->out, ".rv_done:\n");
+    fprintf(cg->out, "  mov %%rdi, %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  mov %%rbx, %%rax\n");
+    fprintf(cg->out, "  shl $8, %%rax\n");
+    fprintf(cg->out, "  or $4, %%rax\n");
     fprintf(cg->out, "  pop %%r13\n");
     fprintf(cg->out, "  pop %%r12\n");
     fprintf(cg->out, "  pop %%rbx\n");

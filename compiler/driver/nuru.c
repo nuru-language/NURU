@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
     // Generate IR
     IRGen* irgen = irgen_create();
     NIRProgram* ir = irgen_lower(irgen, ast);
-    nir_optimize(ir);
+    /* nir_optimize(ir); */
 
     if (opts.show_ir) {
         nir_print_program(ir);
