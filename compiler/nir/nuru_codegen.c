@@ -543,6 +543,35 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  mov %%r11, %%rax\n");
                     fprintf(cg->out, "  push %%rax\n");
                     break;
+
+                case NIR_POW:
+                    {
+                        int lbl = cg->label_counter++;
+                        fprintf(cg->out, "  pop %%rsi\n");
+                        fprintf(cg->out, "  pop %%rdi\n");
+                        fprintf(cg->out, "  sar $8, %%rsi\n");
+                        fprintf(cg->out, "  sar $8, %%rdi\n");
+                        fprintf(cg->out, "  mov $1, %%rax\n");
+                        fprintf(cg->out, "  mov %%rsi, %%rcx\n");
+                        fprintf(cg->out, "  test %%rcx, %%rcx\n");
+                        fprintf(cg->out, "  jle .pow_done_%d\n", lbl);
+                        fprintf(cg->out, ".pow_loop_%d:\n", lbl);
+                        fprintf(cg->out, "  imul %%rdi, %%rax\n");
+                        fprintf(cg->out, "  dec %%rcx\n");
+                        fprintf(cg->out, "  jnz .pow_loop_%d\n", lbl);
+                        fprintf(cg->out, ".pow_done_%d:\n", lbl);
+                        fprintf(cg->out, "  shl $8, %%rax\n");
+                        fprintf(cg->out, "  or $2, %%rax\n");
+                        fprintf(cg->out, "  push %%rax\n");
+                    }
+                    break;
+
+                case NIR_CONTAINS:
+                    fprintf(cg->out, "  pop %%rsi\n");
+                    fprintf(cg->out, "  pop %%rdi\n");
+                    fprintf(cg->out, "  call _contains\n");
+                    fprintf(cg->out, "  push %%rax\n");
+                    break;
                     
                 case NIR_ALLOC_LIST:
                     {
