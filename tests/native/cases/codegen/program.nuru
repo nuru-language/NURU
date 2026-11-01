@@ -931,19 +931,55 @@ create gen_expr using node, vars {
         }
         otherwise {
             when (str_eq with node.kind, "call") is 1 {
-                make arglist be node.args
-                make code changeable ""
-                for each ar in arglist {
-                    make ae be gen_expr with ar, vars
-                    change code to concat with code, ae
-                    change code to concat with code, "  push %rax\n"
+                when (str_eq with node.name, "len") is 1 {
+                    make arglist be node.args
+                    make a0 be arglist[0]
+                    make ae be gen_expr with a0, vars
+                    give concat with ae, "  mov -8(%rax), %rax\n"
                 }
-                make c1 be concat with code, "  call "
-                make nm be concat with node.name, "\n"
-                give concat with c1, nm
+                otherwise {
+                    make arglist be node.args
+                    make code changeable ""
+                    for each ar in arglist {
+                        make ae be gen_expr with ar, vars
+                        change code to concat with code, ae
+                        change code to concat with code, "  push %rax\n"
+                    }
+                    make c1 be concat with code, "  call "
+                    make nm be concat with node.name, "\n"
+                    give concat with c1, nm
+                }
             }
             otherwise {
-                when (str_eq with node.kind, "binop") is 1 {
+                when (str_eq with node.kind, "list") is 1 {
+                    make items be node.items
+                    make n be len with items
+                    make code changeable ""
+                    for each it in items {
+                        make ie be gen_expr with it, vars
+                        change code to concat with code, ie
+                        change code to concat with code, "  push %rax\n"
+                    }
+                    make nstr be to_string with n
+                    make c1 be concat with code, "  mov $"
+                    make c2 be concat with c1, nstr
+                    make c3 be concat with c2, ", %rdi\n  call alloc_list\n"
+                    make c4 changeable concat with c3, "  mov %rax, %r11\n"
+                    make li changeable 0
+                    make c5 changeable ""
+                    make loff changeable ""
+                    while li is below n {
+                        change c5 to concat with c4, "  pop %rax\n  mov %rax, "
+                        change loff to to_string with 8 plus li times 8
+                        change c5 to concat with c5, loff
+                        change c5 to concat with c5, "(%r11)\n"
+                        change c4 to c5
+                        change li to li plus 1
+                    }
+                    give concat with c4, "  mov %r11, %rax\n"
+                }
+                otherwise {
+                    when (str_eq with node.kind, "binop") is 1 {
                     make ls be gen_expr with node.left, vars
                     make rs be gen_expr with node.right, vars
                     make l2 be concat with ls, "  push %rax\n"
@@ -965,7 +1001,7 @@ create gen_expr using node, vars {
                                 give a3
                             }
                             otherwise {
-                                make a4 be concat with l5, "  xor %rdx, %rdx\n  idiv %rcx\n"
+                                make a4 be concat with l5, "  mov %rdx, %rcx\n  cqo\n  idiv %rcx\n"
                                 give a4
                             }
                         }
@@ -1183,17 +1219,21 @@ create gen_program using progs {
         change fcode to concat with fcode, fr.asm
         change fall to fr.count
     }
+    make heap be ".data\n.align 8\nheap:\n  .zero 65536\nheap_top:\n  .quad heap\n.text\n"
+    make als be "alloc_list:\n  push %rbp\n  mov %rsp, %rbp\n  mov %rdi, %r8\n  mov heap_top(%rip), %r9\n  lea (%r9,%r8,8), %r10\n  lea 8(%r10), %r10\n  mov %r10, heap_top(%rip)\n  mov %r8, (%r9)\n  lea 8(%r9), %rax\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
     make rt be "print_int:\n  push %rbp\n  mov %rsp, %rbp\n  sub $48, %rsp\n  mov %rdi, %rax\n  xor %r9, %r9\n  test %rax, %rax\n  jns pi_prep\n  mov $1, %r9\n  neg %rax\npi_prep:\n  mov $10, %rcx\n  lea 47(%rsp), %r8\n  movb $0, (%r8)\nprint_loop:\n  xor %rdx, %rdx\n  div %rcx\n  add $'0', %dl\n  dec %r8\n  mov %dl, (%r8)\n  test %rax, %rax\n  jnz print_loop\n  test %r9, %r9\n  jz pi_nosign\n  dec %r8\n  movb $'-', (%r8)\npi_nosign:\n  mov %r8, %rsi\n  lea 47(%rsp), %rdx\n  sub %r8, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
     make head be ".text\n.globl _start\n_start:\n  call main\n  mov $60, %rax\n  xor %rdi, %rdi\n  syscall\nmain:\n  push %rbp\n  mov %rsp, %rbp\n  sub $64, %rsp\n"
     make tail be ".Lmainret:\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n.data\nnewline:\n  .byte 10\n.text\n"
     make hc be concat with head, rmain.asm
     make hc2 be concat with hc, tail
     make hc3 be concat with hc2, fcode
-    give concat with hc3, rt
+    make hc4 be concat with hc3, heap
+    make hc5 be concat with hc4, als
+    give concat with hc5, rt
 }
 
 create main {
-    make src be "create f using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be f with 3, 4\nshow x\nmake y be 0\nrepeat 3 times \{\nchange y to f with y, 1\n\}\nshow y\n"
+    make src be "make a be [1, 2, 3]\nshow len with a\nmake b be [10, 20]\nshow len with b\nshow 99\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs
