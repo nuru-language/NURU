@@ -399,6 +399,23 @@ create show_ast using node, depth {
     }
 }
 
+create parse_while using toks, p {
+    make c be parse_expr with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make r1 be map [ kind is "while", cond is c.node, body is tb.block ]
+    give map [ stmt is r1, pos is tb.pos ]
+}
+
+create parse_for_each using toks, p {
+    make vtok be toks[p plus 2]
+    make c be parse_expr with toks, p plus 4
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make r2 be map [ kind is "for", var is vtok.value, iter is c.node, body is tb.block ]
+    give map [ stmt is r2, pos is tb.pos ]
+}
+
 create parse_block using toks, p {
     make stmts be []
     make q changeable p plus 1
@@ -545,8 +562,18 @@ create parse_statement using toks, p {
                             give parse_when with toks, p
                         }
                         otherwise {
-                            make m3 be map [ kind is "err", name is "" ]
-                            give map [ stmt is m3, pos is p plus 1 ]
+                            when (str_eq with tok.value, "while") is 1 {
+                                give parse_while with toks, p
+                            }
+                            otherwise {
+                                when (str_eq with tok.value, "for") is 1 {
+                                    give parse_for_each with toks, p
+                                }
+                                otherwise {
+                                    make m3 be map [ kind is "err", name is "" ]
+                                    give map [ stmt is m3, pos is p plus 1 ]
+                                }
+                            }
                         }
                     }
                 }
@@ -589,16 +616,16 @@ create parse_program using toks {
     give stmts
 }
 create main {
-    make src be "when x is at least 3 \{\nshow 1\n\}\nmake y be a is not b\n"
+    make src be "while x \{\nshow 1\n\}\nfor each item in items \{\nshow item\n\}\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
     make st0 be progs[0]
     show st0.kind
     show st0.cond.kind
-    show st0.cond.op
+    show len with st0.body
     make st1 be progs[1]
     show st1.kind
-    show st1.value.kind
-    show st1.value.op
+    show st1.var
+    show len with st1.body
 }

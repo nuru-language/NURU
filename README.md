@@ -173,6 +173,8 @@ Stage 2 is `bootstrap/parser.nuru`, a statement-level parser (lexer + expression
 
 Note on bootstrap test samples: Nuru treats `{`/`}` inside string literals as interpolation, so samples whose source text contains braces must escape them (`\{`, `\}`). A real compiler would read source from files via `read_file`, sidestepping this.
 
-Still on the roadmap: loops (`repeat`/`while`/`for each`), the semantic stage, and a module/import mechanism.
+Loops are covered by `tests/native/cases/parser_loops` (`while` and `for each`). `repeat <n> times` is deferred because `times` is also the multiplication keyword, making it ambiguous without context.
+
+Still on the roadmap: the semantic stage, and a module/import mechanism.
 
 Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).
