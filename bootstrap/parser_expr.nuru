@@ -29,6 +29,24 @@ create parse_primary using toks, p {
     }
 }
 
+create str_eq using a, b {
+    make la be len with a
+    make lb be len with b
+    when la is not lb {
+        give 0
+    }
+    make i changeable 0
+    while i is below la {
+        make ca be ord with substring with a, i, i plus 1
+        make cb be ord with substring with b, i, i plus 1
+        when ca is not cb {
+            give 0
+        }
+        change i to i plus 1
+    }
+    give 1
+}
+
 create tok_is using tok, w {
     when tok.type is 0 {
         give str_eq with tok.value, w

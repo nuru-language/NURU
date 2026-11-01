@@ -169,6 +169,8 @@ To support the later stages, the language gained: list indexing (`list[i]`), exp
 
 A recursive-descent expression-parser prototype (`bootstrap/parser_expr.nuru`) builds on the lexer and is covered by the test `tests/native/cases/parser` (it parses `3 + 4 * (x - 1)` into the correct nested AST). Chasing it exposed and fixed a deeper runtime bug: **function local slots were never initialized**, so the first store to a declared variable decref'd whatever garbage was on the stack (which could tag as a container and segfault). `emit_func` now zeroes the frame on entry. This, together with the optimizer `is_terminal` fix, unblocked stage 2.
 
-Still on the roadmap: the statement/declaration and semantic stages of the parser, plus a module/import mechanism.
+Stage 2 is `bootstrap/parser.nuru`, a statement-level parser (lexer + expression parser + `make`/`show` statements returning a program list), covered by the test `tests/native/cases/parser_stmt`. It handles the keyword operators `plus`/`minus`/`times` (via ordinal string comparison, since runtime-built strings aren't interned).
+
+Still on the roadmap: the remaining statement forms (`create` functions, `when`/`otherwise`, loops), the semantic stage, and a module/import mechanism.
 
 Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).

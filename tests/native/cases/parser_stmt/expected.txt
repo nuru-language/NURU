@@ -1,0 +1,10 @@
+4
+make
+show
+make
+show
+x
+int
+binop
+id
+int
