@@ -1,0 +1,9 @@
+create main {
+    make t be []
+    show len with t
+    add 7 to t
+    add 8 to t
+    show len with t
+    make m be map []
+    show len with m
+}

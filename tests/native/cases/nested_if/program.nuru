@@ -1,0 +1,19 @@
+create main {
+    make x changeable 0
+    when 1 is 1 {
+        when 1 is 1 { change x to x plus 1 }
+        otherwise { change x to x plus 50 }
+    }
+    otherwise { change x to x plus 500 }
+    show x
+    when 1 is 1 {
+        when 1 is 2 { change x to x plus 10 }
+        otherwise { change x to x plus 2 }
+    }
+    show x
+    when 1 is 2 {
+        when 1 is 1 { change x to x plus 1000 }
+    }
+    otherwise { change x to x plus 7 }
+    show x
+}

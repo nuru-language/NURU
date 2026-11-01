@@ -154,7 +154,7 @@ Run with `make test` (or `make test-native`). The harness compiles each program,
 
 All documented language features are implemented and covered by native tests: functions, control flow (`when/otherwise`, `repeat`, `while`, `for each`, `stop`/`skip`, `attempt`/`recover`), arithmetic/comparison, mutable state, string interpolation, escapes, lists, maps, member access, append, `ask` (stdin), and the `len` built-in. The full pipeline — lexer through optimizer, codegen, and object/link stages — is wired end-to-end.
 
-Built-in functions: `show`, `ask` (read a line from stdin), `len` (string/list/map length), `abs`, `min`, `max`, `pow` (integer exponentiation), `to_number` (parse a string to an integer), `concat` (concatenate two strings), `substring(s, start, end)` (slice a string, with bounds clamping), `upper` (uppercase copy), `lower` (lowercase copy), `contains(s, sub)` (does `s` contain `sub` — returns 0/1), `index(s, sub)` (first position of `sub` in `s`, or -1), `ord` (first char code of a string), `chr` (integer → one-character string). String comparison (`is` / `is not`) works via literal interning (identical string constants share one descriptor).
+Built-in functions: `show`, `ask` (read a line from stdin), `read_file(path)` (read an entire file as a string, "" on error), `write_file(path, content)` (write exact bytes, returns 0 on success / -1 on error), `len` (string/list/map length), `abs`, `min`, `max`, `pow` (integer exponentiation), `to_number` (parse a string to an integer), `to_string` (integer → decimal string, handles negatives), `concat` (concatenate two strings), `substring(s, start, end)` (slice a string, with bounds clamping), `upper` (uppercase copy), `lower` (lowercase copy), `contains(s, sub)` (does `s` contain `sub` — returns 0/1), `index(s, sub)` (first position of `sub` in `s`, or -1), `ord` (first char code of a string), `chr` (integer → one-character string). String comparison (`is` / `is not`) works via literal interning (identical string constants share one descriptor).
 
 The runtime implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md` plus catchable divide-by-zero.
 
@@ -164,4 +164,4 @@ Bootstrap is underway in `bootstrap/`. Stage 1, `bootstrap/lexer.nuru`, is a tok
 
 Work on bootstrap surfaced and fixed two compiler defects: empty list/map literals (`[]`, `map []`) were rejected by the parser, and nested `when`/`otherwise` conditionals produced a broken control-flow graph (inner branches did not merge back to the enclosing continuation). Both are resolved.
 
-Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (file I/O beyond `ask`, wider integer/string support).
+Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).

@@ -1,0 +1,6 @@
+create main {
+    make r be write_file with "tests/native/cases/io/tmp.txt", "hello\nworld\n"
+    show r
+    make s be read_file with "tests/native/cases/io/tmp.txt"
+    show s
+}

@@ -160,6 +160,22 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
                     emit(irgen, NIR_INDEX, NULL, NULL, NULL);
                     break;
                 }
+                if (strcmp(node->function_call.name, "to_string") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit(irgen, NIR_TO_STRING, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "read_file") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit(irgen, NIR_READ_FILE, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "write_file") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit_expr(irgen, node->function_call.arguments[1]);
+                    emit(irgen, NIR_WRITE_FILE, NULL, NULL, NULL);
+                    break;
+                }
                 int argc = (int)node->function_call.arg_count;
                 for (size_t i = 0; i < node->function_call.arg_count; i++) {
                     emit_expr(irgen, node->function_call.arguments[i]);

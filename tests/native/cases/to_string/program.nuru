@@ -1,0 +1,7 @@
+create main {
+    show to_string with 42
+    show to_string with -7
+    make s be to_string with 12345
+    show len with s
+    show concat with "line ", to_string with 99
+}
