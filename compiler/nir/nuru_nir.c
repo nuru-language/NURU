@@ -217,6 +217,7 @@ void nir_print_program(NIRProgram* program) {
     for (size_t i = 0; i < program->function_count; i++) {
         NIRFunction* f = program->functions[i];
         printf("FUNCTION %s (%zu params, %zu locals)\n", f->name, f->param_count, f->local_count);
+        { NIRBasicBlock* q=f->entry; size_t nb=0; while(q){nb++; q=q->next;} fprintf(stderr,"[dbg] blocks=%zu entry=%p\n", nb, (void*)f->entry); }
         NIRBasicBlock* b = f->entry;
         while (b) {
             printf("  BLOCK %s\n", b->name);
