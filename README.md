@@ -167,6 +167,8 @@ Work on bootstrap surfaced and fixed several compiler defects: empty list/map li
 
 To support the later stages, the language gained: list indexing (`list[i]`), expression/call statements (`f with args` as a statement, with the result discarded), and the builtins `to_string`, `read_file`, `write_file`.
 
-A recursive-descent expression-parser prototype (`bootstrap/parser_expr.nuru`) builds on the lexer. Chasing it uncovered and fixed the optimizer's `is_terminal` bug (above). It still, however, hits a separate, deeper runtime bug: generated code for functions that combine a `while` loop with nested conditional branches and construct/return map-based values crashes (segfault in `parse_primary`/`map_done`), even with optimization disabled and for trivial inputs where the loop never builds. The crash pattern is sensitive to the exact code shape and to whether the returned map aliases a value from an earlier helper call, and it is not resolved. This is the current blocker for wiring stage 2 into the suite.
+A recursive-descent expression-parser prototype (`bootstrap/parser_expr.nuru`) builds on the lexer and is covered by the test `tests/native/cases/parser` (it parses `3 + 4 * (x - 1)` into the correct nested AST). Chasing it exposed and fixed a deeper runtime bug: **function local slots were never initialized**, so the first store to a declared variable decref'd whatever garbage was on the stack (which could tag as a container and segfault). `emit_func` now zeroes the frame on entry. This, together with the optimizer `is_terminal` fix, unblocked stage 2.
+
+Still on the roadmap: the statement/declaration and semantic stages of the parser, plus a module/import mechanism.
 
 Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).

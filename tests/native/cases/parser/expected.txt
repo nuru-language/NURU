@@ -1,0 +1,14 @@
+binop
+op=+
+  int
+  3
+  binop
+  op=*
+    int
+    4
+    binop
+    op=-
+      id
+      x
+      int
+      1

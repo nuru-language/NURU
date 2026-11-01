@@ -43,23 +43,26 @@ create parse_mul using toks, p {
         otherwise {
             change tok to toks[n]
             when tok.type is 3 {
-            when tok.code is 42 {
-                make r be parse_primary with toks, n plus 1
-                make rn be r.node
-                change n to r.pos
-                change l to map [ kind is "binop", op is "*", left is l, right is rn ]
-            }
-            otherwise {
-                when tok.code is 47 {
+                when tok.code is 42 {
                     make r be parse_primary with toks, n plus 1
                     make rn be r.node
                     change n to r.pos
-                    change l to map [ kind is "binop", op is "/", left is l, right is rn ]
+                    change l to map [ kind is "binop", op is "*", left is l, right is rn ]
                 }
                 otherwise {
-                    change go to 0
+                    when tok.code is 47 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "/", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
                 }
             }
+            otherwise {
+                change go to 0
             }
         }
     }
