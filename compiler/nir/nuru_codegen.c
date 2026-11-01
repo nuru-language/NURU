@@ -1361,7 +1361,6 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  pop %%rbx\n");
     fprintf(cg->out, "  ret\n");
 
-    fprintf(cg->out, "\n.globl _parse_int\n");
     fprintf(cg->out, "_parse_int:\n");
     fprintf(cg->out, "  mov %%rdi, %%r10\n");
     fprintf(cg->out, "  mov %%rsi, %%r11\n");
