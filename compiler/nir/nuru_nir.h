@@ -47,6 +47,7 @@ typedef enum {
     NIR_LOWER,
     NIR_INDEX,
     NIR_TO_STRING,
+    NIR_REVERSE,
     NIR_READ_FILE,
     NIR_WRITE_FILE,
     NIR_ALLOC_LIST,

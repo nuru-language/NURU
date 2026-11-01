@@ -130,6 +130,74 @@ create lex using src {
 # Parses integer/identifier primaries and + - * / with parentheses into a
 # nested map-based AST (kind: "int" / "id" / "binop").
 
+create parse_list_literal using toks, p {
+    make items be []
+    make q changeable p plus 1
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make li1 be map [ kind is "list", items is items ]
+                give map [ node is li1, pos is q plus 1 ]
+            }
+            otherwise {
+                make r be parse_expr with toks, q
+                add r.node to items
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make li2 be map [ kind is "list", items is items ]
+    give map [ node is li2, pos is p plus 1 ]
+}
+
+create parse_map_literal using toks, p {
+    make entries be []
+    make q changeable p plus 2
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make mk1 be map [ kind is "map", entries is entries ]
+                give map [ node is mk1, pos is q plus 1 ]
+            }
+            otherwise {
+                make ktok be toks[q]
+                make r be parse_expr with toks, q plus 2
+                make en be map [ key is ktok.value, value is r.node ]
+                add en to entries
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make mk2 be map [ kind is "map", entries is entries ]
+    give map [ node is mk2, pos is p plus 1 ]
+}
+
 create parse_primary using toks, p {
     make tok be toks[p]
     when tok.type is 1 {
@@ -137,20 +205,35 @@ create parse_primary using toks, p {
     }
     otherwise {
         when tok.type is 0 {
-            give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+            when (tok_is with tok, "map") is 1 {
+                give parse_map_literal with toks, p
+            }
+            otherwise {
+                give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+            }
         }
         otherwise {
-            when tok.type is 3 {
-                when tok.code is 40 {
-                    make r be parse_expr with toks, p plus 1
-                    give map [ node is r.node, pos is r.pos plus 1 ]
+            when tok.type is 2 {
+                give map [ node is map [ kind is "str", value is tok.value ], pos is p plus 1 ]
+            }
+            otherwise {
+                when tok.type is 3 {
+                    when tok.code is 40 {
+                        make r be parse_expr with toks, p plus 1
+                        give map [ node is r.node, pos is r.pos plus 1 ]
+                    }
+                    otherwise {
+                        when tok.code is 91 {
+                            give parse_list_literal with toks, p
+                        }
+                        otherwise {
+                            give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+                        }
+                    }
                 }
                 otherwise {
                     give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
                 }
-            }
-            otherwise {
-                give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
             }
         }
     }
@@ -485,6 +568,44 @@ create parse_repeat using toks, p {
     give map [ stmt is r1, pos is tb.pos ]
 }
 
+create parse_attempt using toks, p {
+    make tb be parse_block with toks, p plus 1
+    make q changeable tb.pos
+    make L be len with toks
+    make t2 changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    make os changeable 1
+    while os is 1 {
+        when q is at least L {
+            change os to 0
+        }
+        otherwise {
+            change t2 to toks[q]
+            when t2.type is 4 {
+                change q to q plus 1
+            }
+            otherwise {
+                change os to 0
+            }
+        }
+    }
+    make eb changeable []
+    make evn changeable ""
+    when q is below L {
+        change t2 to toks[q]
+        when t2.type is 0 {
+            when (str_eq with t2.value, "recover") is 1 {
+                make ev be toks[q plus 1]
+                make eb2 be parse_block with toks, q plus 2
+                change q to eb2.pos
+                change eb to eb2.block
+                change evn to ev.value
+            }
+        }
+    }
+    make a1 be map [ kind is "attempt", body is tb.block, handler is eb, errvar is evn ]
+    give map [ stmt is a1, pos is q ]
+}
+
 create parse_block using toks, p {
     make stmts be []
     make q changeable p plus 1
@@ -643,8 +764,25 @@ create parse_statement using toks, p {
                                     give parse_repeat with toks, p
                                 }
                                 otherwise {
-                                    make m3 be map [ kind is "err", name is "" ]
-                                    give map [ stmt is m3, pos is p plus 1 ]
+                                    when (str_eq with tok.value, "stop") is 1 {
+                                        make ms be map [ kind is "stop" ]
+                                        give map [ stmt is ms, pos is p plus 1 ]
+                                    }
+                                    otherwise {
+                                        when (str_eq with tok.value, "skip") is 1 {
+                                            make mk be map [ kind is "skip" ]
+                                            give map [ stmt is mk, pos is p plus 1 ]
+                                        }
+                                        otherwise {
+                                            when (str_eq with tok.value, "attempt") is 1 {
+                                                give parse_attempt with toks, p
+                                            }
+                                            otherwise {
+                                                make m3 be map [ kind is "err", name is "" ]
+                                                give map [ stmt is m3, pos is p plus 1 ]
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             }
@@ -690,15 +828,11 @@ create parse_program using toks {
     give stmts
 }
 create main {
-    make src be "repeat 5 times \{\nshow 1\n\}\nrepeat n times \{\nshow x\n\}\n"
+    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nwhen x is at least 3 \{\nshow 1\n\}\notherwise \{\nshow 2\n\}\nwhile w \{\nstop\n\}\nfor each it in items \{\nskip\n\}\nrepeat 5 times \{\nshow 1\n\}\nmake a be [1, 2]\nmake b be map [k is 7]\nattempt \{\nmake q be 1\n\}\nrecover e \{\nshow e\n\}\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
-    make st0 be progs[0]
-    show st0.kind
-    show st0.count.kind
-    show len with st0.body
-    make st1 be progs[1]
-    show st1.count.kind
-    show st1.count.value
+    for each st in progs {
+        show st.kind
+    }
 }

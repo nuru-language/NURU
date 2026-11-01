@@ -199,6 +199,7 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_LOWER: return "LOWER";
         case NIR_INDEX: return "INDEX";
         case NIR_TO_STRING: return "TO_STRING";
+        case NIR_REVERSE: return "REVERSE";
         case NIR_READ_FILE: return "READ_FILE";
         case NIR_WRITE_FILE: return "WRITE_FILE";
         case NIR_ALLOC_LIST: return "ALLOC_LIST";

@@ -3,6 +3,74 @@
 # Parses integer/identifier primaries and + - * / with parentheses into a
 # nested map-based AST (kind: "int" / "id" / "binop").
 
+create parse_list_literal using toks, p {
+    make items be []
+    make q changeable p plus 1
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make li1 be map [ kind is "list", items is items ]
+                give map [ node is li1, pos is q plus 1 ]
+            }
+            otherwise {
+                make r be parse_expr with toks, q
+                add r.node to items
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make li2 be map [ kind is "list", items is items ]
+    give map [ node is li2, pos is p plus 1 ]
+}
+
+create parse_map_literal using toks, p {
+    make entries be []
+    make q changeable p plus 2
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make mk1 be map [ kind is "map", entries is entries ]
+                give map [ node is mk1, pos is q plus 1 ]
+            }
+            otherwise {
+                make ktok be toks[q]
+                make r be parse_expr with toks, q plus 2
+                make en be map [ key is ktok.value, value is r.node ]
+                add en to entries
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make mk2 be map [ kind is "map", entries is entries ]
+    give map [ node is mk2, pos is p plus 1 ]
+}
+
 create parse_primary using toks, p {
     make tok be toks[p]
     when tok.type is 1 {
@@ -10,20 +78,35 @@ create parse_primary using toks, p {
     }
     otherwise {
         when tok.type is 0 {
-            give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+            when (tok_is with tok, "map") is 1 {
+                give parse_map_literal with toks, p
+            }
+            otherwise {
+                give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+            }
         }
         otherwise {
-            when tok.type is 3 {
-                when tok.code is 40 {
-                    make r be parse_expr with toks, p plus 1
-                    give map [ node is r.node, pos is r.pos plus 1 ]
+            when tok.type is 2 {
+                give map [ node is map [ kind is "str", value is tok.value ], pos is p plus 1 ]
+            }
+            otherwise {
+                when tok.type is 3 {
+                    when tok.code is 40 {
+                        make r be parse_expr with toks, p plus 1
+                        give map [ node is r.node, pos is r.pos plus 1 ]
+                    }
+                    otherwise {
+                        when tok.code is 91 {
+                            give parse_list_literal with toks, p
+                        }
+                        otherwise {
+                            give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+                        }
+                    }
                 }
                 otherwise {
                     give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
                 }
-            }
-            otherwise {
-                give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
             }
         }
     }
