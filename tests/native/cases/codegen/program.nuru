@@ -1014,7 +1014,44 @@ create gen_block using stmts, vars, ctr {
                         change c to eb.count
                     }
                     otherwise {
-                        when (str_eq with st.kind, "while") is 1 {
+                        when (str_eq with st.kind, "repeat") is 1 {
+                            make ctop be to_string with c
+                            change c to c plus 1
+                            make cend be to_string with c
+                            change c to c plus 1
+                            make hname be concat with "rept", ctop
+                            make idx changeable index_of with vars, hname
+                            when idx is 0 {
+                                add hname to vars
+                                change idx to len with vars
+                            }
+                            make off be to_string with idx times 8
+                            make cnd be gen_expr with st.count, vars
+                            make c1 be concat with cnd, "  mov %rax, -"
+                            make c2 be concat with c1, off
+                            make c3 be concat with c2, "(%rbp)\n.L"
+                            make c4 be concat with c3, ctop
+                            make c5 be concat with c4, ":\n  mov -"
+                            make c6 be concat with c5, off
+                            make c7 be concat with c6, "(%rbp), %rax\n  test %rax, %rax\n  jz .L"
+                            make c8 be concat with c7, cend
+                            make c9 be concat with c8, "\n"
+                            make tb be gen_block with st.body, vars, c
+                            make c10 be concat with c9, tb.asm
+                            make c11 be concat with c10, "  mov -"
+                            make c12 be concat with c11, off
+                            make c13 be concat with c12, "(%rbp), %rax\n  sub $1, %rax\n  mov %rax, -"
+                            make c14 be concat with c13, off
+                            make c15 be concat with c14, "(%rbp)\n  jmp .L"
+                            make c16 be concat with c15, ctop
+                            make c17 be concat with c16, "\n.L"
+                            make c18 be concat with c17, cend
+                            make c19 be concat with c18, ":\n"
+                            change asm to concat with asm, c19
+                            change c to tb.count
+                        }
+                        otherwise {
+                            when (str_eq with st.kind, "while") is 1 {
                             make ctop be to_string with c
                             change c to c plus 1
                             make cend be to_string with c
@@ -1036,6 +1073,7 @@ create gen_block using stmts, vars, ctr {
                             change asm to concat with asm, c12
                             change c to tb.count
                         }
+                        }
                     }
                 }
             }
@@ -1055,7 +1093,7 @@ create gen_program using progs {
 }
 
 create main {
-    make src be "make x be 0\nwhile x is below 3 \{\nshow x\nchange x to x plus 1\n\}\nwhen x is 3 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\n"
+    make src be "make x be 0\nrepeat 3 times \{\nchange x to x plus 1\n\}\nshow x\nwhen x is 3 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\nwhile x is below 6 \{\nshow x\nchange x to x plus 1\n\}\nshow x\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs

@@ -11,17 +11,24 @@ main:
   sub $64, %rsp
   mov $0, %rax
   mov %rax, -8(%rbp)
-.L0:
-  mov -8(%rbp), %rax
-  push %rax
   mov $3, %rax
-  mov %rax, %rdx
-  pop %rax
-  cmp %rdx, %rax
-  setl %al
-  movzbl %al, %eax
+  mov %rax, -16(%rbp)
+.L0:
+  mov -16(%rbp), %rax
   test %rax, %rax
   jz .L1
+  mov -8(%rbp), %rax
+  push %rax
+  mov $1, %rax
+  mov %rax, %rdx
+  pop %rax
+  add %rdx, %rax
+  mov %rax, -8(%rbp)
+  mov -16(%rbp), %rax
+  sub $1, %rax
+  mov %rax, -16(%rbp)
+  jmp .L0
+.L1:
   mov -8(%rbp), %rax
   mov %rax, %rdi
   call print_int
@@ -30,15 +37,6 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov -8(%rbp), %rax
-  push %rax
-  mov $1, %rax
-  mov %rax, %rdx
-  pop %rax
-  add %rdx, %rax
-  mov %rax, -8(%rbp)
-  jmp .L0
-.L1:
   mov -8(%rbp), %rax
   push %rax
   mov $3, %rax
@@ -68,6 +66,42 @@ main:
   mov $1, %rdx
   syscall
 .L3:
+.L4:
+  mov -8(%rbp), %rax
+  push %rax
+  mov $6, %rax
+  mov %rax, %rdx
+  pop %rax
+  cmp %rdx, %rax
+  setl %al
+  movzbl %al, %eax
+  test %rax, %rax
+  jz .L5
+  mov -8(%rbp), %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov -8(%rbp), %rax
+  push %rax
+  mov $1, %rax
+  mov %rax, %rdx
+  pop %rax
+  add %rdx, %rax
+  mov %rax, -8(%rbp)
+  jmp .L4
+.L5:
+  mov -8(%rbp), %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
   mov %rbp, %rsp
   pop %rbp
   ret

@@ -82,6 +82,42 @@ create parse_primary using toks, p {
                 give parse_map_literal with toks, p
             }
             otherwise {
+                make L2 be len with toks
+                when (p plus 1) is below L2 {
+                    make nxt be toks[p plus 1]
+                    when nxt.type is 0 {
+                        when (str_eq with nxt.value, "with") is 1 {
+                            make args be []
+                            make q changeable p plus 2
+                            make go changeable 1
+                            make tcur changeable map [ type is 0, value is "", code is 0, line is 0 ]
+                            while go is 1 {
+                                when q is at least L2 {
+                                    change go to 0
+                                }
+                                otherwise {
+                                    make r be parse_expr with toks, q
+                                    add r.node to args
+                                    change q to r.pos
+                                    when q is below L2 {
+                                        change tcur to toks[q]
+                                        when tcur.code is 44 {
+                                            change q to q plus 1
+                                        }
+                                        otherwise {
+                                            change go to 0
+                                        }
+                                    }
+                                    otherwise {
+                                        change go to 0
+                                    }
+                                }
+                            }
+                            make call1 be map [ kind is "call", name is tok.value, args is args ]
+                            give map [ node is call1, pos is q ]
+                        }
+                    }
+                }
                 give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
             }
         }
