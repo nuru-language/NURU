@@ -137,6 +137,29 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
                     emit(irgen, NIR_CONTAINS, NULL, NULL, NULL);
                     break;
                 }
+                if (strcmp(node->function_call.name, "substring") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit_expr(irgen, node->function_call.arguments[1]);
+                    emit_expr(irgen, node->function_call.arguments[2]);
+                    emit(irgen, NIR_SUBSTRING, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "upper") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit(irgen, NIR_UPPER, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "lower") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit(irgen, NIR_LOWER, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "index") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit_expr(irgen, node->function_call.arguments[1]);
+                    emit(irgen, NIR_INDEX, NULL, NULL, NULL);
+                    break;
+                }
                 int argc = (int)node->function_call.arg_count;
                 for (size_t i = 0; i < node->function_call.arg_count; i++) {
                     emit_expr(irgen, node->function_call.arguments[i]);

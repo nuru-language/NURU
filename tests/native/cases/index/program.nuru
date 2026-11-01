@@ -1,0 +1,6 @@
+create main {
+    show index with "hello world", "world"
+    show index with "hello world", "xyz"
+    show index with "abc", ""
+    show index with "aaaa", "aa"
+}

@@ -1,0 +1,6 @@
+create main {
+    show substring with "hello world", 0, 5
+    show substring with "hello world", 6, 11
+    show substring with "hello world", 3, 3
+    show substring with "hello", 2, 99
+}

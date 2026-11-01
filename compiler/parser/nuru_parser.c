@@ -727,7 +727,7 @@ static ASTNode* parse_primary_expr(Parser* parser) {
     if (match(parser, TOKEN_LBRACKET)) {
         size_t item_count = 0;
         ASTNode** items = parse_expression_list(parser, &item_count);
-        if (!items) return NULL;
+        if (!items && item_count != 0) return NULL;
         if (!match(parser, TOKEN_RBRACKET)) {
             for (size_t i = 0; i < item_count; i++) ast_free(items[i]);
             free(items);
@@ -745,8 +745,7 @@ static ASTNode* parse_primary_expr(Parser* parser) {
 
         size_t entry_count = 0;
         ASTNode** entries = parse_map_entries(parser, &entry_count);
-        if (!entries) return NULL;
-
+        if (!entries && entry_count != 0) return NULL;
         if (!match(parser, TOKEN_RBRACKET)) {
             for (size_t i = 0; i < entry_count; i++) ast_free(entries[i]);
             free(entries);

@@ -1,0 +1,5 @@
+create main {
+    show upper with "Hello, World!"
+    show lower with "Hello, World!"
+    show upper with lower with "MiXeD"
+}

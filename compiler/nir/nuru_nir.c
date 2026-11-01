@@ -194,6 +194,10 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_CHR: return "CHR";
         case NIR_POW: return "POW";
         case NIR_CONTAINS: return "CONTAINS";
+        case NIR_SUBSTRING: return "SUBSTRING";
+        case NIR_UPPER: return "UPPER";
+        case NIR_LOWER: return "LOWER";
+        case NIR_INDEX: return "INDEX";
         case NIR_ALLOC_LIST: return "ALLOC_LIST";
         case NIR_LOAD_LIST_LEN: return "LOAD_LIST_LEN";
         case NIR_LOAD_ELT: return "LOAD_ELT";

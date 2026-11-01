@@ -320,6 +320,7 @@ static void analyze_function_call(SemanticAnalyzer* analyzer, ASTNode* node) {
         { "min", 2 }, { "max", 2 }, { "to_number", 1 },
         { "concat", 2 }, { "ord", 1 }, { "chr", 1 },
         { "pow", 2 }, { "contains", 2 },
+        { "substring", 3 }, { "upper", 1 }, { "lower", 1 }, { "index", 2 },
     };
     for (size_t bi = 0; bi < sizeof(builtins)/sizeof(builtins[0]); bi++) {
         if (strcmp(name, builtins[bi].name) == 0) {

@@ -1,0 +1,135 @@
+# bootstrap/lexer.nuru
+# Stage 1 of the self-hosted compiler: a tokenizer for Nuru source.
+# Token types: 0=identifier, 1=integer, 2=string, 3=punctuation,
+#              4=newline, 5=eof. Each token is a map with type/value/line.
+
+create is_digit using c {
+    when c is at least 48 {
+        when c is at most 57 {
+            give 1
+        }
+    }
+    give 0
+}
+
+create is_alpha using c {
+    when c is at least 65 {
+        when c is at most 90 {
+            give 1
+        }
+    }
+    when c is at least 97 {
+        when c is at most 122 {
+            give 1
+        }
+    }
+    when c is 95 {
+        give 1
+    }
+    give 0
+}
+
+create make_token using t, v, ln {
+    give map [ type is t, value is v, line is ln ]
+}
+
+create lex using src {
+    make tokens be []
+    make i changeable 0
+    make n be len with src
+    make line changeable 1
+
+    while i is below n {
+        make c be ord with substring with src, i, i plus 1
+
+        when c is 10 {
+            add make_token with 4, "", line to tokens
+            change line to line plus 1
+            change i to i plus 1
+        }
+        otherwise {
+            when c is 32 {
+                change i to i plus 1
+            }
+            otherwise {
+                when c is 9 {
+                    change i to i plus 1
+                }
+                otherwise {
+                    when is_digit with c is 1 {
+                        make start be i
+                        while i is below n {
+                            make c2 be ord with substring with src, i, i plus 1
+                            when is_digit with c2 is 1 {
+                                change i to i plus 1
+                            }
+                            otherwise {
+                                stop
+                            }
+                        }
+                        make sv_int be substring with src, start, i
+                        make nv be to_number with sv_int
+                        add make_token with 1, nv, line to tokens
+                    }
+                    otherwise {
+                        when is_alpha with c is 1 {
+                            make start be i
+                            while i is below n {
+                                make c2 be ord with substring with src, i, i plus 1
+                                when is_alpha with c2 is 1 {
+                                    change i to i plus 1
+                                }
+                                otherwise {
+                                    stop
+                                }
+                            }
+                            make sv_id be substring with src, start, i
+                            add make_token with 0, sv_id, line to tokens
+                        }
+                        otherwise {
+                            when c is 34 {
+                                make start be i
+                                change i to i plus 1
+                                make kg changeable 1
+                                while kg is 1 {
+                                    when i is at least n {
+                                        change kg to 0
+                                    }
+                                    otherwise {
+                                        make c2 be ord with substring with src, i, i plus 1
+                                        when c2 is 34 {
+                                            change i to i plus 1
+                                            change kg to 0
+                                        }
+                                        otherwise {
+                                            change i to i plus 1
+                                        }
+                                    }
+                                }
+                                make sv_str be substring with src, start, i
+                                add make_token with 2, sv_str, line to tokens
+                            }
+                            otherwise {
+                                make cv_punct be chr with c
+                                add make_token with 3, cv_punct, line to tokens
+                                change i to i plus 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    add make_token with 5, "", line to tokens
+    give tokens
+}
+
+create main {
+    make sample be "create main { show \"hi\" }\n"
+    make toks be lex with sample
+    for each tok in toks {
+        show tok.type
+        show tok.value
+    }
+}
