@@ -285,8 +285,88 @@ create parse_add using toks, p {
     give map [ node is l, pos is n ]
 }
 
+create parse_comparison using toks, p {
+    make prim be parse_add with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 0 {
+                when (str_eq with tok.value, "is") is 1 {
+                    make op changeable "is"
+                    make m changeable n plus 1
+                    make consumed changeable 0
+                    when m is below L {
+                        make t2 be toks[m]
+                        when t2.type is 0 {
+                            when (str_eq with t2.value, "not") is 1 {
+                                change op to "is not"
+                                change m to m plus 1
+                                change consumed to 1
+                            }
+                            otherwise {
+                                when (str_eq with t2.value, "above") is 1 {
+                                    change op to "is above"
+                                    change m to m plus 1
+                                    change consumed to 1
+                                }
+                                otherwise {
+                                    when (str_eq with t2.value, "below") is 1 {
+                                        change op to "is below"
+                                        change m to m plus 1
+                                        change consumed to 1
+                                    }
+                                    otherwise {
+                                        when (str_eq with t2.value, "at") is 1 {
+                                            when (m plus 1) is below L {
+                                                make t3 be toks[m plus 1]
+                                                when t3.type is 0 {
+                                                    when (str_eq with t3.value, "least") is 1 {
+                                                        change op to "is at least"
+                                                        change m to m plus 2
+                                                        change consumed to 1
+                                                    }
+                                                    otherwise {
+                                                        when (str_eq with t3.value, "most") is 1 {
+                                                            change op to "is at most"
+                                                            change m to m plus 2
+                                                            change consumed to 1
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    make r be parse_add with toks, m
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "cmp", op is op, left is l, right is rn ]
+                }
+                otherwise {
+                    change go to 0
+                }
+            }
+            otherwise {
+                change go to 0
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
 create parse_expr using toks, p {
-    give parse_add with toks, p
+    give parse_comparison with toks, p
 }
 
 create show_ast using node, depth {
@@ -509,17 +589,16 @@ create parse_program using toks {
     give stmts
 }
 create main {
-    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nwhen x \{\nshow 1\n\}\notherwise \{\nshow 2\n\}\nmake y be 3\n"
+    make src be "when x is at least 3 \{\nshow 1\n\}\nmake y be a is not b\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
-    for each st in progs {
-        show st.kind
-    }
     make st0 be progs[0]
-    show st0.name
-    show len with st0.params
+    show st0.kind
+    show st0.cond.kind
+    show st0.cond.op
     make st1 be progs[1]
-    show len with st1.then
-    show len with st1.els
+    show st1.kind
+    show st1.value.kind
+    show st1.value.op
 }

@@ -1,0 +1,7 @@
+2
+when
+cmp
+is at least
+make
+cmp
+is not
