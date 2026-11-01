@@ -1,0 +1,13 @@
+create is_even using n {
+    when n is 0 { give 1 }
+    otherwise { give is_odd with n minus 1 }
+}
+create is_odd using n {
+    when n is 0 { give 0 }
+    otherwise { give is_even with n minus 1 }
+}
+create main {
+    show is_even with 10
+    show is_odd with 7
+    show is_even with 3
+}

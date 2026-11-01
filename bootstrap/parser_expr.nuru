@@ -14,7 +14,7 @@ create parse_primary using toks, p {
         }
         otherwise {
             when tok.type is 3 {
-                when tok.value is "(" {
+                when tok.code is 40 {
                     make r be parse_expr with toks, p plus 1
                     give map [ node is r.node, pos is r.pos plus 1 ]
                 }
@@ -34,20 +34,21 @@ create parse_mul using toks, p {
     make n changeable l.pos
     make L be len with toks
     make go changeable 1
+    make tok changeable map [ type is 0, value is "", line is 0 ]
     while go is 1 {
         when n is at least L {
             change go to 0
         }
         otherwise {
-            make tok be toks[n]
+            change tok to toks[n]
             when tok.type is 3 {
-                when tok.value is "*" {
+                when tok.code is 42 {
                     make r be parse_primary with toks, n plus 1
                     change n to r.pos
                     change l to map [ kind is "binop", op is "*", left is l.node, right is r.node ]
                 }
                 otherwise {
-                    when tok.value is "/" {
+                    when tok.code is 47 {
                         make r be parse_primary with toks, n plus 1
                         change n to r.pos
                         change l to map [ kind is "binop", op is "/", left is l.node, right is r.node ]
@@ -70,20 +71,21 @@ create parse_add using toks, p {
     make n changeable l.pos
     make L be len with toks
     make go changeable 1
+    make tok changeable map [ type is 0, value is "", line is 0 ]
     while go is 1 {
         when n is at least L {
             change go to 0
         }
         otherwise {
-            make tok be toks[n]
+            change tok to toks[n]
             when tok.type is 3 {
-                when tok.value is "+" {
+                when tok.code is 43 {
                     make r be parse_mul with toks, n plus 1
                     change n to r.pos
                     change l to map [ kind is "binop", op is "+", left is l.node, right is r.node ]
                 }
                 otherwise {
-                    when tok.value is "-" {
+                    when tok.code is 45 {
                         make r be parse_mul with toks, n plus 1
                         change n to r.pos
                         change l to map [ kind is "binop", op is "-", left is l.node, right is r.node ]
@@ -106,30 +108,30 @@ create parse_expr using toks, p {
 }
 
 create show_ast using node, depth {
-    make indent be ""
+    make indent changeable ""
     make i changeable 0
     while i is below depth {
-        make indent be concat with indent, "  "
+        change indent to concat with indent, "  "
         change i to i plus 1
     }
     make line be concat with indent, node.kind
     show line
     when node.kind is "binop" {
-        make l2 be concat with indent, "op="
-        make l2 be concat with l2, node.op
-        show l2
+        make t1 be concat with indent, "op="
+        make t2 be concat with t1, node.op
+        show t2
         show_ast with node.left, depth plus 1
         show_ast with node.right, depth plus 1
     }
     otherwise {
         when node.kind is "id" {
-            make l2 be concat with indent, node.value
-            show l2
+            make t3 be concat with indent, node.value
+            show t3
         }
         otherwise {
             when node.kind is "int" {
-                make l2 be concat with indent, to_string with node.value
-                show l2
+                make t4 be concat with indent, to_string with node.value
+                show t4
             }
         }
     }

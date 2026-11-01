@@ -385,7 +385,10 @@ static ASTNode* parse_statement(Parser* parser) {
         return ast_create_block(stmts, stmt_count, parser->previous.line, parser->previous.column);
     }
 
-    return parse_declaration(parser);
+    ASTNode* decl = parse_declaration(parser);
+    if (decl) return decl;
+    if (parser->had_error) return NULL;
+    return parse_expression(parser);
 }
 
 static ASTNode** parse_statements(Parser* parser, int stop_token, size_t* out_count) {

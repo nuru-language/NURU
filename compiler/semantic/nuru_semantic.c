@@ -180,14 +180,11 @@ static void analyze_append(SemanticAnalyzer* analyzer, ASTNode* node) {
 static void analyze_function_decl(SemanticAnalyzer* analyzer, ASTNode* node) {
     const char* name = node->function_decl.name;
 
-    if (scope_lookup_current(analyzer->current_scope, name)) {
-        semantic_error(analyzer, "Function already declared", node->line, node->column);
-        return;
+    if (!scope_lookup_current(analyzer->current_scope, name)) {
+        Symbol* sym = make_symbol(name, SYMBOL_FUNCTION);
+        sym->arity = (int)node->function_decl.param_count;
+        scope_define(analyzer->current_scope, sym);
     }
-
-    Symbol* sym = make_symbol(name, SYMBOL_FUNCTION);
-    sym->arity = (int)node->function_decl.param_count;
-    scope_define(analyzer->current_scope, sym);
 
     bool was_in_function = analyzer->in_function;
     analyzer->in_function = true;
@@ -516,6 +513,17 @@ static void analyze_node(SemanticAnalyzer* analyzer, ASTNode* node) {
 
 int semantic_analyze(SemanticAnalyzer* analyzer, ASTNode* program) {
     if (!program) return 1;
+
+    if (program->type == AST_PROGRAM) {
+        for (size_t i = 0; i < program->program.statement_count; i++) {
+            ASTNode* s = program->program.statements[i];
+            if (s->type == AST_FUNCTION_DECL && !scope_lookup_current(analyzer->current_scope, s->function_decl.name)) {
+                Symbol* sym = make_symbol(s->function_decl.name, SYMBOL_FUNCTION);
+                sym->arity = (int)s->function_decl.param_count;
+                scope_define(analyzer->current_scope, sym);
+            }
+        }
+    }
 
     analyze_node(analyzer, program);
 

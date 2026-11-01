@@ -755,6 +755,11 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     }
                     break;
 
+                case NIR_DISCARD:
+                    fprintf(cg->out, "  pop %%rax\n");
+                    fprintf(cg->out, "  call _decref\n");
+                    break;
+
                 case NIR_HALT:
                     fprintf(cg->out, "  mov $60, %%rax\n");
                     fprintf(cg->out, "  xor %%rdi, %%rdi\n");

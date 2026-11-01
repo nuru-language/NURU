@@ -1,0 +1,7 @@
+create greet using name {
+    show concat with "hi ", name
+}
+create main {
+    greet with "bob"
+    greet with "ann"
+}

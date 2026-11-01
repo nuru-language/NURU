@@ -111,7 +111,7 @@ create lex using src {
                             }
                             otherwise {
                                 make cv_punct be chr with c
-                                add make_token with 3, cv_punct, line to tokens
+                                add map [ type is 3, value is cv_punct, code is c, line is line ] to tokens
                                 change i to i plus 1
                             }
                         }

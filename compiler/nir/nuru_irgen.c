@@ -280,6 +280,11 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
                 emit(irgen, NIR_RETURN, NULL, NULL, NULL);
             }
             break;
+
+        case AST_FUNCTION_CALL:
+            emit_expr(irgen, node);
+            emit(irgen, NIR_DISCARD, NULL, NULL, NULL);
+            break;
             
         case AST_FUNCTION_DECL:
             {
