@@ -29,6 +29,13 @@ create parse_primary using toks, p {
     }
 }
 
+create tok_is using tok, w {
+    when tok.type is 0 {
+        give str_eq with tok.value, w
+    }
+    give 0
+}
+
 create parse_mul using toks, p {
     make prim be parse_primary with toks, p
     make l changeable prim.node
@@ -90,21 +97,42 @@ create parse_add using toks, p {
         }
         otherwise {
             change tok to toks[n]
-            when tok.code is 43 {
-                make r be parse_mul with toks, n plus 1
-                make rn be r.node
-                change n to r.pos
-                change l to map [ kind is "binop", op is "+", left is l, right is rn ]
-            }
-            otherwise {
-                when tok.code is 45 {
+            when tok.type is 3 {
+                when tok.code is 43 {
                     make r be parse_mul with toks, n plus 1
                     make rn be r.node
                     change n to r.pos
-                    change l to map [ kind is "binop", op is "-", left is l, right is rn ]
+                    change l to map [ kind is "binop", op is "+", left is l, right is rn ]
                 }
                 otherwise {
-                    change go to 0
+                    when tok.code is 45 {
+                        make r be parse_mul with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "-", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                when (tok_is with tok, "plus") is 1 {
+                    make r be parse_mul with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "plus", left is l, right is rn ]
+                }
+                otherwise {
+                    when (tok_is with tok, "minus") is 1 {
+                        make r be parse_mul with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "minus", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
                 }
             }
         }
