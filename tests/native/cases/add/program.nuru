@@ -1,0 +1,8 @@
+create sum using a, b {
+    give a plus b
+}
+
+create main {
+    make answer be sum with 20, 22
+    show answer
+}

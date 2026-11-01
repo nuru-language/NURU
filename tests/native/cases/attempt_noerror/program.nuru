@@ -1,0 +1,8 @@
+create main {
+    attempt {
+        make q be 10 divided by 2
+        show "q is {q}"
+    } recover e {
+        show "caught"
+    }
+}

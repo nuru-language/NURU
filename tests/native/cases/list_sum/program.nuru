@@ -1,0 +1,8 @@
+create main {
+    make nums be [10, 20, 30]
+    make total changeable 0
+    for each n in nums {
+        change total to total plus n
+    }
+    show total
+}

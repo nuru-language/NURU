@@ -1,0 +1,4 @@
+create main {
+    show "line1\nline2"
+    show "tab\there"
+}

@@ -1,0 +1,6 @@
+create main {
+    make a be "Hello "
+    make b be "world"
+    show concat with a, b
+    show concat with "x", concat with "y", "z"
+}

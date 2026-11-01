@@ -1,0 +1,14 @@
+create main {
+    make keep be ["alive"]
+    make i changeable 0
+    repeat 20000 times {
+        make tmp be [i, i]
+        change i to i plus 1
+    }
+    make total changeable 0
+    for each k in keep {
+        change total to total plus 1
+    }
+    show i
+    show total
+}

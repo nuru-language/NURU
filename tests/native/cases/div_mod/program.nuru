@@ -1,0 +1,6 @@
+create main {
+    make q be 17 divided by 5
+    make r be 17 remainder of 5
+    show q
+    show r
+}

@@ -1,0 +1,7 @@
+create main {
+    make a be 10 times 3
+    make b be a divided by 2
+    make c be b minus 5
+    make d be c plus 2
+    show d
+}

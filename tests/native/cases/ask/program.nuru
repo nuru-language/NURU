@@ -1,0 +1,4 @@
+create main {
+    make n be ask
+    show "Hello {n}"
+}

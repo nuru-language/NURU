@@ -1,0 +1,9 @@
+create main {
+    make x be 10
+    when x is above 5 { show "gt" }
+    when x is below 5 { show "lt" }
+    when x is at most 10 { show "le" }
+    when x is at least 10 { show "ge" }
+    when x is 10 { show "eq" }
+    when x is not 5 { show "ne" }
+}

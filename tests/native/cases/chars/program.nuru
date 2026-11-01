@@ -1,0 +1,8 @@
+create main {
+    show ord with "A"
+    show ord with "z"
+    show chr with 66
+    make a be chr with 72
+    make s be concat with a, "i"
+    show s
+}

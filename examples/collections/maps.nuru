@@ -1,0 +1,8 @@
+create main {
+    make person be map [
+        name is "Amina",
+        city is "Kampala"
+    ]
+
+    show person.name
+}

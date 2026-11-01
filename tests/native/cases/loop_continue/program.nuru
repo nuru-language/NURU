@@ -1,0 +1,8 @@
+create main {
+    make i changeable 0
+    repeat 5 times {
+        change i to i plus 1
+        when i is 2 { skip }
+        show i
+    }
+}

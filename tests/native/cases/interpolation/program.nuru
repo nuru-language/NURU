@@ -1,0 +1,5 @@
+create main {
+    make name be "Amina"
+    make age be 30
+    show "Hello {name}, you are {age}."
+}

@@ -1,0 +1,5 @@
+gt
+le
+ge
+eq
+ne

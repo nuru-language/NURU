@@ -1,0 +1,9 @@
+create main {
+    when "abc" is "abc" { show "eq" }
+    when "abc" is not "xyz" { show "ne" }
+    make a be "hello"
+    when a is "hello" { show "a_eq" }
+    make b be "world"
+    when a is b { show "bad" }
+    otherwise { show "diff" }
+}

@@ -1,0 +1,7 @@
+create main {
+    make cities be ["Kampala", "Jinja"]
+    add "Gulu" to cities
+    for each city in cities {
+        show city
+    }
+}

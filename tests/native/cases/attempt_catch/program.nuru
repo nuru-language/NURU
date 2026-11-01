@@ -1,0 +1,9 @@
+create main {
+    attempt {
+        make q be 10 divided by 0
+        show "no error"
+    } recover e {
+        show "caught error"
+    }
+    show "done"
+}

@@ -1,0 +1,7 @@
+create main {
+    make x changeable 0
+    while x is below 3 {
+        show x
+        change x to x plus 1
+    }
+}

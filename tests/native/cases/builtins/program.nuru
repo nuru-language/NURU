@@ -1,0 +1,9 @@
+create main {
+    make n be 0 minus 7
+    show abs with n
+    show min with 3, 9
+    show max with 3, 9
+    show to_number with "42"
+    make s be "123"
+    show to_number with s
+}

@@ -1,0 +1,7 @@
+create main {
+    show -7
+    show abs with -5
+    show 10 minus -3
+    make n be -4
+    when n is below 0 { show "neg" }
+}

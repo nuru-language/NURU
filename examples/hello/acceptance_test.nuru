@@ -1,0 +1,18 @@
+make name be "Nuru"
+make count be changeable 1
+
+create greet using person {
+    show "Hello {person}"
+}
+
+create main {
+    greet with name
+
+    repeat 3 times {
+        show "Nuru is growing"
+    }
+
+    change count to count plus 1
+
+    show count
+}

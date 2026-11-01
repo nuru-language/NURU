@@ -1,0 +1,7 @@
+create main {
+    make x changeable 0
+    repeat 5 times {
+        change x to x plus 1
+    }
+    show x
+}

@@ -1,0 +1,12 @@
+create sum using a, b {
+    give a plus b
+}
+
+create double using x {
+    give sum with x, x
+}
+
+create main {
+    make r be double with 21
+    show r
+}

@@ -1,0 +1,6 @@
+create main {
+    show concat with (chr with 72), "i"
+    show (3 plus 4) times 2
+    make x be (10 minus 3) plus 1
+    show x
+}

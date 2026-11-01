@@ -1,0 +1,6 @@
+create main {
+    make s be "hello"
+    show len with s
+    make c be ["a", "bb", "ccc"]
+    show len with c
+}

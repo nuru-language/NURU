@@ -1,0 +1,9 @@
+create main {
+    make i changeable 0
+    while true {
+        change i to i plus 1
+        when i is 3 { stop }
+        show i
+    }
+    show "done"
+}

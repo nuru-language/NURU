@@ -1,0 +1,9 @@
+create main {
+    make age be 15
+    when age is at least 18 {
+        show "Adult"
+    }
+    otherwise {
+        show "Minor"
+    }
+}
