@@ -1,0 +1,7 @@
+2
+function
+add
+2
+2
+make
+give

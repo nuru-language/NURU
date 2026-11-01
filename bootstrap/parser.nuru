@@ -319,6 +319,84 @@ create show_ast using node, depth {
     }
 }
 
+create parse_block using toks, p {
+    make stmts be []
+    make q changeable p plus 1
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.type is 4 {
+                change q to q plus 1
+            }
+            otherwise {
+                when tok.code is 125 {
+                    give map [ block is stmts, pos is q plus 1 ]
+                }
+                otherwise {
+                    when tok.type is 5 {
+                        change go to 0
+                    }
+                    otherwise {
+                        make r be parse_statement with toks, q
+                        add r.stmt to stmts
+                        change q to r.pos
+                    }
+                }
+            }
+        }
+    }
+    give map [ block is stmts, pos is q ]
+}
+
+create parse_create using toks, p {
+    make ntok be toks[p plus 1]
+    make params be []
+    make q changeable p plus 2
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    when q is below L {
+        change tok to toks[q]
+        when (str_eq with tok.value, "using") is 1 {
+            change q to q plus 1
+        }
+    }
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 123 {
+                make b be parse_block with toks, q
+                make f1 be map [ kind is "function", name is ntok.value, params is params, body is b.block ]
+                give map [ stmt is f1, pos is b.pos ]
+            }
+            otherwise {
+                when tok.type is 0 {
+                    add tok.value to params
+                    change q to q plus 1
+                }
+                otherwise {
+                    when tok.type is 3 {
+                        change q to q plus 1
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+        }
+    }
+    make f2 be map [ kind is "err", name is "" ]
+    give map [ stmt is f2, pos is p plus 1 ]
+}
 
 create parse_statement using toks, p {
     make tok be toks[p]
@@ -336,8 +414,20 @@ create parse_statement using toks, p {
                 give map [ stmt is m2, pos is r.pos ]
             }
             otherwise {
-                make m3 be map [ kind is "err", name is "" ]
-                give map [ stmt is m3, pos is p plus 1 ]
+                when (str_eq with tok.value, "create") is 1 {
+                    give parse_create with toks, p
+                }
+                otherwise {
+                    when (str_eq with tok.value, "give") is 1 {
+                        make r be parse_expr with toks, p plus 1
+                        make m5 be map [ kind is "give", expr is r.node ]
+                        give map [ stmt is m5, pos is r.pos ]
+                    }
+                    otherwise {
+                        make m3 be map [ kind is "err", name is "" ]
+                        give map [ stmt is m3, pos is p plus 1 ]
+                    }
+                }
             }
         }
     }
@@ -376,20 +466,18 @@ create parse_program using toks {
     }
     give stmts
 }
-
 create main {
-    make src be "make x be 5\nshow x\nmake y be x plus 1\nshow y\n"
+    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be 3\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
-    for each st in progs {
-        show st.kind
-    }
     make st0 be progs[0]
+    show st0.kind
     show st0.name
-    show st0.value.kind
-    make st2 be progs[2]
-    show st2.value.kind
-    show st2.value.left.kind
-    show st2.value.right.kind
+    show len with st0.params
+    show len with st0.body
+    make s0 be st0.body[0]
+    show s0.kind
+    make s1 be st0.body[1]
+    show s1.kind
 }
