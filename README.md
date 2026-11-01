@@ -163,6 +163,10 @@ The runtime implements the full tagged-value and reference-counting model of `do
 
 Bootstrap is underway in `bootstrap/`. Stage 1, `bootstrap/lexer.nuru`, is a tokenizer for Nuru source written entirely in Nuru (identifiers, integers, strings, punctuation, newlines, EOF). It is covered by the native test `tests/native/cases/lexer`.
 
-Work on bootstrap surfaced and fixed two compiler defects: empty list/map literals (`[]`, `map []`) were rejected by the parser, and nested `when`/`otherwise` conditionals produced a broken control-flow graph (inner branches did not merge back to the enclosing continuation). Both are resolved.
+Work on bootstrap surfaced and fixed several compiler defects: empty list/map literals (`[]`, `map []`) were rejected by the parser; nested `when`/`otherwise` conditionals produced a broken control-flow graph (inner branches did not merge back to the enclosing continuation); string equality (`is`) was pointer/interning-based, so runtime-built strings never compared equal to literals; and the semantic analyzer rejected forward/mutual function references (now supported via a pre-declaration pass). All are resolved and covered by tests.
+
+To support the later stages, the language gained: list indexing (`list[i]`), expression/call statements (`f with args` as a statement, with the result discarded), and the builtins `to_string`, `read_file`, `write_file`.
+
+A recursive-descent expression-parser prototype (`bootstrap/parser_expr.nuru`) builds on the lexer but currently hits an unresolved codegen bug: functions that combine a `while` loop with a `change x to map [...]` whose entries read member accesses of locals corrupt the runtime stack, so it is not yet wired into the suite.
 
 Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).
