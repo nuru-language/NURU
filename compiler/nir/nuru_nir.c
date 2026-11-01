@@ -220,6 +220,7 @@ void nir_print_program(NIRProgram* program) {
         { NIRBasicBlock* q=f->entry; size_t nb=0; while(q){nb++; q=q->next;} fprintf(stderr,"[dbg] blocks=%zu entry=%p\n", nb, (void*)f->entry); }
         NIRBasicBlock* b = f->entry;
         while (b) {
+            fprintf(stderr, "[dbg] visiting block %s next=%p\n", b->name, (void*)b->next);
             printf("  BLOCK %s\n", b->name);
             for (size_t j = 0; j < b->instruction_count; j++) {
                 NIRInstruction* instr = b->instructions[j];
