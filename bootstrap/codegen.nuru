@@ -756,35 +756,43 @@ create parse_statement using toks, p {
                                 give parse_while with toks, p
                             }
                             otherwise {
-                            when (str_eq with tok.value, "for") is 1 {
-                                give parse_for_each with toks, p
-                            }
-                            otherwise {
-                                when (str_eq with tok.value, "repeat") is 1 {
-                                    give parse_repeat with toks, p
+                                when (str_eq with tok.value, "for") is 1 {
+                                    give parse_for_each with toks, p
                                 }
                                 otherwise {
-                                    when (str_eq with tok.value, "stop") is 1 {
-                                        make ms be map [ kind is "stop" ]
-                                        give map [ stmt is ms, pos is p plus 1 ]
+                                    when (str_eq with tok.value, "repeat") is 1 {
+                                        give parse_repeat with toks, p
                                     }
                                     otherwise {
-                                        when (str_eq with tok.value, "skip") is 1 {
-                                            make mk be map [ kind is "skip" ]
-                                            give map [ stmt is mk, pos is p plus 1 ]
+                                        when (str_eq with tok.value, "change") is 1 {
+                                            make ntok be toks[p plus 1]
+                                            make r be parse_expr with toks, p plus 3
+                                            make mch be map [ kind is "change", name is ntok.value, value is r.node ]
+                                            give map [ stmt is mch, pos is r.pos ]
                                         }
                                         otherwise {
-                                            when (str_eq with tok.value, "attempt") is 1 {
-                                                give parse_attempt with toks, p
+                                            when (str_eq with tok.value, "stop") is 1 {
+                                                make ms be map [ kind is "stop" ]
+                                                give map [ stmt is ms, pos is p plus 1 ]
                                             }
                                             otherwise {
-                                                make m3 be map [ kind is "err", name is "" ]
-                                                give map [ stmt is m3, pos is p plus 1 ]
+                                                when (str_eq with tok.value, "skip") is 1 {
+                                                    make mk be map [ kind is "skip" ]
+                                                    give map [ stmt is mk, pos is p plus 1 ]
+                                                }
+                                                otherwise {
+                                                    when (str_eq with tok.value, "attempt") is 1 {
+                                                        give parse_attempt with toks, p
+                                                    }
+                                                    otherwise {
+                                                        make m3 be map [ kind is "err", name is "" ]
+                                                        give map [ stmt is m3, pos is p plus 1 ]
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             }
                         }
                     }
@@ -937,6 +945,7 @@ create gen_expr using node, vars {
     }
 }
 
+
 create gen_show using expr, vars {
     make e be gen_expr with expr, vars
     make e2 be concat with e, "  mov %rax, %rdi\n"
@@ -967,29 +976,67 @@ create gen_block using stmts, vars, ctr {
                 change asm to concat with asm, st3
             }
             otherwise {
-                when (str_eq with st.kind, "when") is 1 {
-                    make cc2 be to_string with c
-                    change c to c plus 1
-                    make ce be to_string with c
-                    change c to c plus 1
-                    make cnd be gen_expr with st.cond, vars
-                    make c1 be concat with cnd, "  test %rax, %rax\n  jz .L"
-                    make c2 be concat with c1, cc2
-                    make c3 be concat with c2, "\n"
-                    make tb be gen_block with st.then, vars, c
-                    make c4 be concat with c3, tb.asm
-                    make c5 be concat with c4, "  jmp .L"
-                    make c6 be concat with c5, ce
-                    make c7 be concat with c6, "\n.L"
-                    make c8 be concat with c7, cc2
-                    make c9 be concat with c8, ":\n"
-                    make eb be gen_block with st.els, vars, tb.count
-                    make c10 be concat with c9, eb.asm
-                    make c11 be concat with c10, ".L"
-                    make c12 be concat with c11, ce
-                    make c13 be concat with c12, ":\n"
-                    change asm to concat with asm, c13
-                    change c to eb.count
+                when (str_eq with st.kind, "change") is 1 {
+                    make ve be gen_expr with st.value, vars
+                    make idx changeable index_of with vars, st.name
+                    when idx is 0 {
+                        change idx to 1
+                    }
+                    make off be to_string with idx times 8
+                    make st1 be concat with ve, "  mov %rax, -"
+                    make st2 be concat with st1, off
+                    make st3 be concat with st2, "(%rbp)\n"
+                    change asm to concat with asm, st3
+                }
+                otherwise {
+                    when (str_eq with st.kind, "when") is 1 {
+                        make cc2 be to_string with c
+                        change c to c plus 1
+                        make ce be to_string with c
+                        change c to c plus 1
+                        make cnd be gen_expr with st.cond, vars
+                        make c1 be concat with cnd, "  test %rax, %rax\n  jz .L"
+                        make c2 be concat with c1, cc2
+                        make c3 be concat with c2, "\n"
+                        make tb be gen_block with st.then, vars, c
+                        make c4 be concat with c3, tb.asm
+                        make c5 be concat with c4, "  jmp .L"
+                        make c6 be concat with c5, ce
+                        make c7 be concat with c6, "\n.L"
+                        make c8 be concat with c7, cc2
+                        make c9 be concat with c8, ":\n"
+                        make eb be gen_block with st.els, vars, tb.count
+                        make c10 be concat with c9, eb.asm
+                        make c11 be concat with c10, ".L"
+                        make c12 be concat with c11, ce
+                        make c13 be concat with c12, ":\n"
+                        change asm to concat with asm, c13
+                        change c to eb.count
+                    }
+                    otherwise {
+                        when (str_eq with st.kind, "while") is 1 {
+                            make ctop be to_string with c
+                            change c to c plus 1
+                            make cend be to_string with c
+                            change c to c plus 1
+                            make cnd be gen_expr with st.cond, vars
+                            make c1 be concat with ".L", ctop
+                            make c2 be concat with c1, ":\n"
+                            make c3 be concat with c2, cnd
+                            make c4 be concat with c3, "  test %rax, %rax\n  jz .L"
+                            make c5 be concat with c4, cend
+                            make c6 be concat with c5, "\n"
+                            make tb be gen_block with st.body, vars, c
+                            make c7 be concat with c6, tb.asm
+                            make c8 be concat with c7, "  jmp .L"
+                            make c9 be concat with c8, ctop
+                            make c10 be concat with c9, "\n.L"
+                            make c11 be concat with c10, cend
+                            make c12 be concat with c11, ":\n"
+                            change asm to concat with asm, c12
+                            change c to tb.count
+                        }
+                    }
                 }
             }
         }
@@ -1008,7 +1055,7 @@ create gen_program using progs {
 }
 
 create main {
-    make src be "make x be 5\nshow x\nmake y be x plus 2\nshow y\nwhen y is 7 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\n"
+    make src be "make x be 0\nwhile x is below 3 \{\nshow x\nchange x to x plus 1\n\}\nwhen x is 3 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs
