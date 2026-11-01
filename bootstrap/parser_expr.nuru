@@ -42,6 +42,7 @@ create parse_mul using toks, p {
         }
         otherwise {
             change tok to toks[n]
+            when tok.type is 3 {
             when tok.code is 42 {
                 make r be parse_primary with toks, n plus 1
                 make rn be r.node
@@ -58,6 +59,7 @@ create parse_mul using toks, p {
                 otherwise {
                     change go to 0
                 }
+            }
             }
         }
     }
