@@ -827,49 +827,73 @@ create parse_program using toks {
     }
     give stmts
 }
-create gen_expr using node {
+create index_of using lst, name {
+    make i changeable 0
+    for each n in lst {
+        change i to i plus 1
+        when (str_eq with n, name) is 1 {
+            give i
+        }
+    }
+    give 0
+}
+
+create gen_expr using node, vars {
     when (str_eq with node.kind, "int") is 1 {
         make v be to_string with node.value
         make p1 be concat with "  mov $", v
         give concat with p1, ", %rax\n"
     }
     otherwise {
-        when (str_eq with node.kind, "binop") is 1 {
-            make ls be gen_expr with node.left
-            make rs be gen_expr with node.right
-            make l2 be concat with ls, "  push %rax\n"
-            make l3 be concat with l2, rs
-            make l4 be concat with l3, "  mov %rax, %rdx\n"
-            make l5 be concat with l4, "  pop %rax\n"
-            when (str_eq with node.op, "plus") is 1 {
-                make a1 be concat with l5, "  add %rdx, %rax\n"
-                give a1
+        when (str_eq with node.kind, "id") is 1 {
+            make idx be index_of with vars, node.value
+            when idx is 0 {
+                give "  xor %eax, %eax\n"
             }
             otherwise {
-                when (str_eq with node.op, "minus") is 1 {
-                    make a2 be concat with l5, "  sub %rdx, %rax\n"
-                    give a2
-                }
-                otherwise {
-                    when (str_eq with node.op, "times") is 1 {
-                        make a3 be concat with l5, "  imul %rdx, %rax\n"
-                        give a3
-                    }
-                    otherwise {
-                        make a4 be concat with l5, "  xor %rdx, %rdx\n  idiv %rcx\n"
-                        give a4
-                    }
-                }
+                make off be to_string with idx times 8
+                make p2 be concat with "  mov -", off
+                give concat with p2, "(%rbp), %rax\n"
             }
         }
         otherwise {
-            give "  xor %eax, %eax\n"
+            when (str_eq with node.kind, "binop") is 1 {
+                make ls be gen_expr with node.left, vars
+                make rs be gen_expr with node.right, vars
+                make l2 be concat with ls, "  push %rax\n"
+                make l3 be concat with l2, rs
+                make l4 be concat with l3, "  mov %rax, %rdx\n"
+                make l5 be concat with l4, "  pop %rax\n"
+                when (str_eq with node.op, "plus") is 1 {
+                    make a1 be concat with l5, "  add %rdx, %rax\n"
+                    give a1
+                }
+                otherwise {
+                    when (str_eq with node.op, "minus") is 1 {
+                        make a2 be concat with l5, "  sub %rdx, %rax\n"
+                        give a2
+                    }
+                    otherwise {
+                        when (str_eq with node.op, "times") is 1 {
+                            make a3 be concat with l5, "  imul %rdx, %rax\n"
+                            give a3
+                        }
+                        otherwise {
+                            make a4 be concat with l5, "  xor %rdx, %rdx\n  idiv %rcx\n"
+                            give a4
+                        }
+                    }
+                }
+            }
+            otherwise {
+                give "  xor %eax, %eax\n"
+            }
         }
     }
 }
 
-create gen_show using expr {
-    make e be gen_expr with expr
+create gen_show using expr, vars {
+    make e be gen_expr with expr, vars
     make e2 be concat with e, "  mov %rax, %rdi\n"
     make s1 be concat with e2, "  call print_int\n"
     give concat with s1, "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
@@ -877,14 +901,30 @@ create gen_show using expr {
 
 create gen_program using progs {
     make code changeable ""
+    make vars be []
     for each st in progs {
         when (str_eq with st.kind, "show") is 1 {
-            make gs be gen_show with st.expr
+            make gs be gen_show with st.expr, vars
             change code to concat with code, gs
+        }
+        otherwise {
+            when (str_eq with st.kind, "make") is 1 {
+                make ve be gen_expr with st.value, vars
+                make idx changeable index_of with vars, st.name
+                when idx is 0 {
+                    add st.name to vars
+                    change idx to len with vars
+                }
+                make off be to_string with idx times 8
+                make st1 be concat with ve, "  mov %rax, -"
+                make st2 be concat with st1, off
+                make st3 be concat with st2, "(%rbp)\n"
+                change code to concat with code, st3
+            }
         }
     }
     make rt be "print_int:\n  push %rbp\n  mov %rsp, %rbp\n  sub $48, %rsp\n  mov %rdi, %rax\n  xor %r9, %r9\n  test %rax, %rax\n  jns pi_prep\n  mov $1, %r9\n  neg %rax\npi_prep:\n  mov $10, %rcx\n  lea 47(%rsp), %r8\n  movb $0, (%r8)\nprint_loop:\n  xor %rdx, %rdx\n  div %rcx\n  add $'0', %dl\n  dec %r8\n  mov %dl, (%r8)\n  test %rax, %rax\n  jnz print_loop\n  test %r9, %r9\n  jz pi_nosign\n  dec %r8\n  movb $'-', (%r8)\npi_nosign:\n  mov %r8, %rsi\n  lea 47(%rsp), %rdx\n  sub %r8, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
-    make head be ".text\n.globl _start\n_start:\n  call main\n  mov $60, %rax\n  xor %rdi, %rdi\n  syscall\nmain:\n  push %rbp\n  mov %rsp, %rbp\n"
+    make head be ".text\n.globl _start\n_start:\n  call main\n  mov $60, %rax\n  xor %rdi, %rdi\n  syscall\nmain:\n  push %rbp\n  mov %rsp, %rbp\n  sub $64, %rsp\n"
     make tail be "  mov %rbp, %rsp\n  pop %rbp\n  ret\n.data\nnewline:\n  .byte 10\n.text\n"
     make hc be concat with head, code
     make tc be concat with hc, tail
@@ -892,7 +932,7 @@ create gen_program using progs {
 }
 
 create main {
-    make src be "show 42\nshow 3 plus 4\nshow 10 minus 2\nshow 6 times 7\n"
+    make src be "make x be 5\nshow x\nmake y be x plus 2\nshow y\nmake z be x times y\nshow z\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs

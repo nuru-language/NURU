@@ -24,11 +24,15 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-test: test-native test-ast
+test: test-native test-ast test-codegen-e2e
 
 test-native: $(TARGET)
 	@echo "Running native execution tests..."
 	./tests/native/run_native_tests.sh
+
+test-codegen-e2e: $(TARGET)
+	@echo "Running self-hosting end-to-end check..."
+	./tests/native/run_codegen_e2e.sh
 
 test-ast: $(TARGET)
 	@echo "Running AST tests..."

@@ -8,7 +8,10 @@ _start:
 main:
   push %rbp
   mov %rsp, %rbp
-  mov $42, %rax
+  sub $64, %rsp
+  mov $5, %rax
+  mov %rax, -8(%rbp)
+  mov -8(%rbp), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -16,25 +19,14 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov $3, %rax
-  push %rax
-  mov $4, %rax
-  mov %rax, %rdx
-  pop %rax
-  add %rdx, %rax
-  mov %rax, %rdi
-  call print_int
-  mov $1, %rax
-  mov $1, %rdi
-  lea newline(%rip), %rsi
-  mov $1, %rdx
-  syscall
-  mov $10, %rax
+  mov -8(%rbp), %rax
   push %rax
   mov $2, %rax
   mov %rax, %rdx
   pop %rax
-  sub %rdx, %rax
+  add %rdx, %rax
+  mov %rax, -16(%rbp)
+  mov -16(%rbp), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -42,12 +34,14 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov $6, %rax
+  mov -8(%rbp), %rax
   push %rax
-  mov $7, %rax
+  mov -16(%rbp), %rax
   mov %rax, %rdx
   pop %rax
   imul %rdx, %rax
+  mov %rax, -24(%rbp)
+  mov -24(%rbp), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
