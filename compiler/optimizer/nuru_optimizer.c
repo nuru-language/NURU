@@ -94,8 +94,7 @@ static void trim_jumps_to_next(NIRBasicBlock* block) {
 }
 
 static int is_terminal(NIROpcode op) {
-    return op == NIR_JUMP || op == NIR_JUMP_IF_FALSE || op == NIR_JUMP_IF_TRUE ||
-           op == NIR_RETURN || op == NIR_RETURN_VALUE || op == NIR_HALT;
+    return op == NIR_JUMP || op == NIR_RETURN || op == NIR_RETURN_VALUE || op == NIR_HALT;
 }
 
 static void truncate_after_terminal(NIRBasicBlock* block) {
