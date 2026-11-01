@@ -349,19 +349,25 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     
                 case NIR_PRINT_INT:
                     fprintf(cg->out, "  pop %%rax\n");
+                    fprintf(cg->out, "  mov %%rax, %%r12\n");
                     fprintf(cg->out, "  call _print_value\n");
+                    fprintf(cg->out, "  mov %%r12, %%rax\n");
                     fprintf(cg->out, "  call _decref\n");
                     break;
                     
                 case NIR_PRINT_STRING:
                     fprintf(cg->out, "  pop %%rax\n");
+                    fprintf(cg->out, "  mov %%rax, %%r12\n");
                     fprintf(cg->out, "  call _print_value\n");
+                    fprintf(cg->out, "  mov %%r12, %%rax\n");
                     fprintf(cg->out, "  call _decref\n");
                     break;
                     
                 case NIR_PRINT_VALUE_RAW:
                     fprintf(cg->out, "  pop %%rax\n");
+                    fprintf(cg->out, "  mov %%rax, %%r12\n");
                     fprintf(cg->out, "  call _print_value_raw\n");
+                    fprintf(cg->out, "  mov %%r12, %%rax\n");
                     fprintf(cg->out, "  call _decref\n");
                     break;
                     
