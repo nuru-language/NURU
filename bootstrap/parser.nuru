@@ -398,6 +398,43 @@ create parse_create using toks, p {
     give map [ stmt is f2, pos is p plus 1 ]
 }
 
+create parse_when using toks, p {
+    make c be parse_expr with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make eb changeable []
+    make q2 changeable tb.pos
+    make L be len with toks
+    make t2 changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    make os changeable 1
+    while os is 1 {
+        when q2 is at least L {
+            change os to 0
+        }
+        otherwise {
+            change t2 to toks[q2]
+            when t2.type is 4 {
+                change q2 to q2 plus 1
+            }
+            otherwise {
+                change os to 0
+            }
+        }
+    }
+    when q2 is below L {
+        change t2 to toks[q2]
+        when t2.type is 0 {
+            when (str_eq with t2.value, "otherwise") is 1 {
+                make eb2 be parse_block with toks, q2 plus 1
+                change q2 to eb2.pos
+                change eb to eb2.block
+            }
+        }
+    }
+    make w1 be map [ kind is "when", cond is c.node, then is tb.block, els is eb ]
+    give map [ stmt is w1, pos is q2 ]
+}
+
 create parse_statement using toks, p {
     make tok be toks[p]
     when tok.type is 0 {
@@ -424,8 +461,13 @@ create parse_statement using toks, p {
                         give map [ stmt is m5, pos is r.pos ]
                     }
                     otherwise {
-                        make m3 be map [ kind is "err", name is "" ]
-                        give map [ stmt is m3, pos is p plus 1 ]
+                        when (str_eq with tok.value, "when") is 1 {
+                            give parse_when with toks, p
+                        }
+                        otherwise {
+                            make m3 be map [ kind is "err", name is "" ]
+                            give map [ stmt is m3, pos is p plus 1 ]
+                        }
                     }
                 }
             }
@@ -467,17 +509,17 @@ create parse_program using toks {
     give stmts
 }
 create main {
-    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be 3\n"
+    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nwhen x \{\nshow 1\n\}\notherwise \{\nshow 2\n\}\nmake y be 3\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
+    for each st in progs {
+        show st.kind
+    }
     make st0 be progs[0]
-    show st0.kind
     show st0.name
     show len with st0.params
-    show len with st0.body
-    make s0 be st0.body[0]
-    show s0.kind
-    make s1 be st0.body[1]
-    show s1.kind
+    make st1 be progs[1]
+    show len with st1.then
+    show len with st1.els
 }
