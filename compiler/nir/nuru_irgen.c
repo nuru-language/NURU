@@ -125,6 +125,18 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
                     emit(irgen, NIR_CHR, NULL, NULL, NULL);
                     break;
                 }
+                if (strcmp(node->function_call.name, "pow") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit_expr(irgen, node->function_call.arguments[1]);
+                    emit(irgen, NIR_POW, NULL, NULL, NULL);
+                    break;
+                }
+                if (strcmp(node->function_call.name, "contains") == 0) {
+                    emit_expr(irgen, node->function_call.arguments[0]);
+                    emit_expr(irgen, node->function_call.arguments[1]);
+                    emit(irgen, NIR_CONTAINS, NULL, NULL, NULL);
+                    break;
+                }
                 int argc = (int)node->function_call.arg_count;
                 for (size_t i = 0; i < node->function_call.arg_count; i++) {
                     emit_expr(irgen, node->function_call.arguments[i]);
