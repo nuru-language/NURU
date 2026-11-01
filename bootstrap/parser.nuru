@@ -416,6 +416,75 @@ create parse_for_each using toks, p {
     give map [ stmt is r2, pos is tb.pos ]
 }
 
+create parse_repeat_count using toks, p {
+    make prim be parse_primary with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 0 {
+                when (str_eq with tok.value, "plus") is 1 {
+                    make r be parse_primary with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "plus", left is l, right is rn ]
+                }
+                otherwise {
+                    when (str_eq with tok.value, "minus") is 1 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "minus", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                when tok.type is 3 {
+                    when tok.code is 43 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "+", left is l, right is rn ]
+                    }
+                    otherwise {
+                        when tok.code is 45 {
+                            make r be parse_primary with toks, n plus 1
+                            make rn be r.node
+                            change n to r.pos
+                            change l to map [ kind is "binop", op is "-", left is l, right is rn ]
+                        }
+                        otherwise {
+                            change go to 0
+                        }
+                    }
+                }
+                otherwise {
+                    change go to 0
+                }
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
+create parse_repeat using toks, p {
+    make c be parse_repeat_count with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q plus 1
+    make r1 be map [ kind is "repeat", count is c.node, body is tb.block ]
+    give map [ stmt is r1, pos is tb.pos ]
+}
+
 create parse_block using toks, p {
     make stmts be []
     make q changeable p plus 1
@@ -566,13 +635,18 @@ create parse_statement using toks, p {
                                 give parse_while with toks, p
                             }
                             otherwise {
-                                when (str_eq with tok.value, "for") is 1 {
-                                    give parse_for_each with toks, p
+                            when (str_eq with tok.value, "for") is 1 {
+                                give parse_for_each with toks, p
+                            }
+                            otherwise {
+                                when (str_eq with tok.value, "repeat") is 1 {
+                                    give parse_repeat with toks, p
                                 }
                                 otherwise {
                                     make m3 be map [ kind is "err", name is "" ]
                                     give map [ stmt is m3, pos is p plus 1 ]
                                 }
+                            }
                             }
                         }
                     }
@@ -616,16 +690,15 @@ create parse_program using toks {
     give stmts
 }
 create main {
-    make src be "while x \{\nshow 1\n\}\nfor each item in items \{\nshow item\n\}\n"
+    make src be "repeat 5 times \{\nshow 1\n\}\nrepeat n times \{\nshow x\n\}\n"
     make toks be lex with src
     make progs be parse_program with toks
     show len with progs
     make st0 be progs[0]
     show st0.kind
-    show st0.cond.kind
+    show st0.count.kind
     show len with st0.body
     make st1 be progs[1]
-    show st1.kind
-    show st1.var
-    show len with st1.body
+    show st1.count.kind
+    show st1.count.value
 }
