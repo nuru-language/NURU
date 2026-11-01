@@ -214,6 +214,12 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
                  nir_const_str(irgen->program, node->member_access.property, strlen(node->member_access.property)),
                  NULL);
             break;
+
+        case AST_INDEX_ACCESS:
+            emit_expr(irgen, node->index_access.object);
+            emit_expr(irgen, node->index_access.index);
+            emit(irgen, NIR_LOAD_ELT_EXPR, NULL, NULL, NULL);
+            break;
             
         default:
             break;

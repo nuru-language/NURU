@@ -1,0 +1,11 @@
+create main {
+    make t be [10, 20, 30]
+    show t[0]
+    show t[1]
+    show t[2]
+    make i changeable 0
+    change i to 2
+    show t[i]
+    make t2 be ["a", "b"]
+    show t2[1]
+}

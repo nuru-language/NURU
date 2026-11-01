@@ -669,6 +669,16 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                         fprintf(cg->out, "  push %%rax\n");
                     }
                     break;
+
+                case NIR_LOAD_ELT_EXPR:
+                    fprintf(cg->out, "  pop %%rcx\n");          /* index */
+                    fprintf(cg->out, "  sar $8, %%rcx\n");
+                    fprintf(cg->out, "  pop %%rdx\n");          /* list */
+                    fprintf(cg->out, "  shr $8, %%rdx\n");
+                    fprintf(cg->out, "  mov 16(%%rdx,%%rcx,8), %%rax\n");
+                    fprintf(cg->out, "  call _incref\n");
+                    fprintf(cg->out, "  push %%rax\n");
+                    break;
                     
                 case NIR_ALLOC_MAP:
                     {

@@ -70,6 +70,7 @@ create main {
         city is "Kampala"
     ]
     show "Hello {person.name}"
+    show cities[0]        # list indexing: "Kampala"
 
     show "tab\there\nnewline"
 
