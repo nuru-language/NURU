@@ -827,12 +827,169 @@ create parse_program using toks {
     }
     give stmts
 }
+create contains_name using lst, name {
+    for each n in lst {
+        when (str_eq with n, name) is 1 {
+            give 1
+        }
+    }
+    give 0
+}
+
+create add_unique using lst, name {
+    when (contains_name with lst, name) is 0 {
+        add name to lst
+    }
+    give lst
+}
+
+create collect_block using stmts, decls {
+    make acc changeable decls
+    for each st in stmts {
+        when (str_eq with st.kind, "make") is 1 {
+            change acc to add_unique with acc, st.name
+        }
+        otherwise {
+            when (str_eq with st.kind, "function") is 1 {
+                change acc to add_unique with acc, st.name
+                for each p in st.params {
+                    change acc to add_unique with acc, p
+                }
+                change acc to collect_block with st.body, acc
+            }
+            otherwise {
+                when (str_eq with st.kind, "for") is 1 {
+                    change acc to add_unique with acc, st.var
+                    change acc to collect_block with st.body, acc
+                }
+                otherwise {
+                    when (str_eq with st.kind, "when") is 1 {
+                        change acc to collect_block with st.then, acc
+                        change acc to collect_block with st.els, acc
+                    }
+                    otherwise {
+                        when (str_eq with st.kind, "while") is 1 {
+                            change acc to collect_block with st.body, acc
+                        }
+                        otherwise {
+                            when (str_eq with st.kind, "repeat") is 1 {
+                                change acc to collect_block with st.body, acc
+                            }
+                            otherwise {
+                                when (str_eq with st.kind, "attempt") is 1 {
+                                    change acc to collect_block with st.body, acc
+                                    change acc to collect_block with st.handler, acc
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give acc
+}
+
+create check_expr using node, decls, errors {
+    make er changeable errors
+    when (str_eq with node.kind, "id") is 1 {
+        when (contains_name with decls, node.value) is 0 {
+            add node.value to er
+        }
+    }
+    otherwise {
+        when (str_eq with node.kind, "binop") is 1 {
+            change er to check_expr with node.left, decls, er
+            change er to check_expr with node.right, decls, er
+        }
+        otherwise {
+            when (str_eq with node.kind, "cmp") is 1 {
+                change er to check_expr with node.left, decls, er
+                change er to check_expr with node.right, decls, er
+            }
+            otherwise {
+                when (str_eq with node.kind, "list") is 1 {
+                    for each it in node.items {
+                        change er to check_expr with it, decls, er
+                    }
+                }
+                otherwise {
+                    when (str_eq with node.kind, "map") is 1 {
+                        for each en in node.entries {
+                            change er to check_expr with en.value, decls, er
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give er
+}
+
+create check_block using stmts, decls, errors {
+    make er changeable errors
+    for each st in stmts {
+        when (str_eq with st.kind, "make") is 1 {
+            change er to check_expr with st.value, decls, er
+        }
+        otherwise {
+            when (str_eq with st.kind, "show") is 1 {
+                change er to check_expr with st.expr, decls, er
+            }
+            otherwise {
+                when (str_eq with st.kind, "give") is 1 {
+                    change er to check_expr with st.expr, decls, er
+                }
+                otherwise {
+                    when (str_eq with st.kind, "when") is 1 {
+                        change er to check_expr with st.cond, decls, er
+                        change er to check_block with st.then, decls, er
+                        change er to check_block with st.els, decls, er
+                    }
+                    otherwise {
+                        when (str_eq with st.kind, "while") is 1 {
+                            change er to check_expr with st.cond, decls, er
+                            change er to check_block with st.body, decls, er
+                        }
+                        otherwise {
+                            when (str_eq with st.kind, "repeat") is 1 {
+                                change er to check_expr with st.count, decls, er
+                                change er to check_block with st.body, decls, er
+                            }
+                            otherwise {
+                                when (str_eq with st.kind, "for") is 1 {
+                                    change er to check_expr with st.iter, decls, er
+                                    change er to check_block with st.body, decls, er
+                                }
+                                otherwise {
+                                    when (str_eq with st.kind, "attempt") is 1 {
+                                        change er to check_block with st.body, decls, er
+                                        change er to check_block with st.handler, decls, er
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give er
+}
+
+create analyze_program using progs {
+    make decls be collect_block with progs, []
+    make errors be check_block with progs, decls, []
+    make decl_count be len with decls
+    make err_count be len with errors
+    give map [ decls is decl_count, errors is err_count ]
+}
+
 create main {
-    make src be "create add using a, b \{\nmake r be a plus b\ngive r\n\}\nwhen x is at least 3 \{\nshow 1\n\}\notherwise \{\nshow 2\n\}\nwhile w \{\nstop\n\}\nfor each it in items \{\nskip\n\}\nrepeat 5 times \{\nshow 1\n\}\nmake a be [1, 2]\nmake b be map [k is 7]\nattempt \{\nmake q be 1\n\}\nrecover e \{\nshow e\n\}\n"
+    make src be "create f using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be f with 1, 2\nshow x\nmake bad be nope plus 1\n"
     make toks be lex with src
     make progs be parse_program with toks
-    show len with progs
-    for each st in progs {
-        show st.kind
-    }
+    make r be analyze_program with progs
+    show r.decls
+    show r.errors
 }

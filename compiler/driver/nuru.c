@@ -239,18 +239,18 @@ int main(int argc, char** argv) {
 
     if (nuru_assemble(tmpasm, objfile) != 0) {
         fprintf(stderr, "Assembly failed\n");
-        unlink(tmpasm);
+        /* keep asm */
         unlink(objfile);
         return 1;
     }
     if (nuru_link(objfile, outfile) != 0) {
         fprintf(stderr, "Linking failed\n");
-        unlink(tmpasm);
+        /* keep asm */
         unlink(objfile);
         return 1;
     }
 
-    unlink(tmpasm);
+    /* keep asm */
     unlink(objfile);
     free(outfile);
     free(asmfile);

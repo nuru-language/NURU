@@ -177,4 +177,6 @@ Loops are covered by `tests/native/cases/parser_loops` (`while` and `for each`) 
 
 Stage 2 now parses all major statement forms: `make`/`show`/`give`, `create` functions, `when`/`otherwise`, `while`, `for each`, `repeat`, `attempt`/`recover`, `stop`/`skip`, plus list/map/string literals. Test coverage: `parser_stmt`, `parser_fn`, `parser_control`, `parser_cmp`, `parser_loops`, `parser_repeat`, `parser_attempt`, `parser_literals`.
 
-Remaining bootstrap work (a standing project): the semantic stage and code generation written in Nuru, plus a module/import mechanism and wider integer/string support.
+Stage 3 is a semantic checker written in Nuru (`analyze_program`): it collects all declared names (variables, function names, parameters, loop variables) and reports references to undeclared identifiers, returning declaration/error counts. Covered by `tests/native/cases/parser_semantic`.
+
+Remaining bootstrap work (a standing project): code generation written in Nuru, plus a module/import mechanism and wider integer/string support.

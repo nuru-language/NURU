@@ -1,0 +1,995 @@
+# bootstrap/lexer.nuru
+# Stage 1 of the self-hosted compiler: a tokenizer for Nuru source.
+# Token types: 0=identifier, 1=integer, 2=string, 3=punctuation,
+#              4=newline, 5=eof. Each token is a map with type/value/line.
+
+create is_digit using c {
+    when c is at least 48 {
+        when c is at most 57 {
+            give 1
+        }
+    }
+    give 0
+}
+
+create is_alpha using c {
+    when c is at least 65 {
+        when c is at most 90 {
+            give 1
+        }
+    }
+    when c is at least 97 {
+        when c is at most 122 {
+            give 1
+        }
+    }
+    when c is 95 {
+        give 1
+    }
+    give 0
+}
+
+create make_token using t, v, ln {
+    give map [ type is t, value is v, line is ln ]
+}
+
+create lex using src {
+    make tokens be []
+    make i changeable 0
+    make n be len with src
+    make line changeable 1
+
+    while i is below n {
+        make c be ord with substring with src, i, i plus 1
+
+        when c is 10 {
+            add make_token with 4, "", line to tokens
+            change line to line plus 1
+            change i to i plus 1
+        }
+        otherwise {
+            when c is 32 {
+                change i to i plus 1
+            }
+            otherwise {
+                when c is 9 {
+                    change i to i plus 1
+                }
+                otherwise {
+                    when (is_digit with c) is 1 {
+                        make start be i
+                        while i is below n {
+                            make c2 be ord with substring with src, i, i plus 1
+                            when (is_digit with c2) is 1 {
+                                change i to i plus 1
+                            }
+                            otherwise {
+                                stop
+                            }
+                        }
+                        make sv_int be substring with src, start, i
+                        make nv be to_number with sv_int
+                        add make_token with 1, nv, line to tokens
+                    }
+                    otherwise {
+                        when (is_alpha with c) is 1 {
+                            make start be i
+                            while i is below n {
+                                make c2 be ord with substring with src, i, i plus 1
+                                when (is_alpha with c2) is 1 {
+                                    change i to i plus 1
+                                }
+                                otherwise {
+                                    stop
+                                }
+                            }
+                            make sv_id be substring with src, start, i
+                            add make_token with 0, sv_id, line to tokens
+                        }
+                        otherwise {
+                            when c is 34 {
+                                make start be i
+                                change i to i plus 1
+                                make kg changeable 1
+                                while kg is 1 {
+                                    when i is at least n {
+                                        change kg to 0
+                                    }
+                                    otherwise {
+                                        make c2 be ord with substring with src, i, i plus 1
+                                        when c2 is 34 {
+                                            change i to i plus 1
+                                            change kg to 0
+                                        }
+                                        otherwise {
+                                            change i to i plus 1
+                                        }
+                                    }
+                                }
+                                make sv_str be substring with src, start, i
+                                add make_token with 2, sv_str, line to tokens
+                            }
+                            otherwise {
+                                make cv_punct be chr with c
+                                add map [ type is 3, value is cv_punct, code is c, line is line ] to tokens
+                                change i to i plus 1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    add make_token with 5, "", line to tokens
+    give tokens
+}
+
+# bootstrap/parser_expr.nuru
+# Stage 2 (subset): a recursive-descent expression parser written in Nuru.
+# Parses integer/identifier primaries and + - * / with parentheses into a
+# nested map-based AST (kind: "int" / "id" / "binop").
+
+create parse_list_literal using toks, p {
+    make items be []
+    make q changeable p plus 1
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make li1 be map [ kind is "list", items is items ]
+                give map [ node is li1, pos is q plus 1 ]
+            }
+            otherwise {
+                make r be parse_expr with toks, q
+                add r.node to items
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make li2 be map [ kind is "list", items is items ]
+    give map [ node is li2, pos is p plus 1 ]
+}
+
+create parse_map_literal using toks, p {
+    make entries be []
+    make q changeable p plus 2
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 93 {
+                make mk1 be map [ kind is "map", entries is entries ]
+                give map [ node is mk1, pos is q plus 1 ]
+            }
+            otherwise {
+                make ktok be toks[q]
+                make r be parse_expr with toks, q plus 2
+                make en be map [ key is ktok.value, value is r.node ]
+                add en to entries
+                change q to r.pos
+                when q is below L {
+                    change tok to toks[q]
+                    when tok.code is 44 {
+                        change q to q plus 1
+                    }
+                }
+            }
+        }
+    }
+    make mk2 be map [ kind is "map", entries is entries ]
+    give map [ node is mk2, pos is p plus 1 ]
+}
+
+create parse_primary using toks, p {
+    make tok be toks[p]
+    when tok.type is 1 {
+        give map [ node is map [ kind is "int", value is tok.value ], pos is p plus 1 ]
+    }
+    otherwise {
+        when tok.type is 0 {
+            when (tok_is with tok, "map") is 1 {
+                give parse_map_literal with toks, p
+            }
+            otherwise {
+                give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
+            }
+        }
+        otherwise {
+            when tok.type is 2 {
+                give map [ node is map [ kind is "str", value is tok.value ], pos is p plus 1 ]
+            }
+            otherwise {
+                when tok.type is 3 {
+                    when tok.code is 40 {
+                        make r be parse_expr with toks, p plus 1
+                        give map [ node is r.node, pos is r.pos plus 1 ]
+                    }
+                    otherwise {
+                        when tok.code is 91 {
+                            give parse_list_literal with toks, p
+                        }
+                        otherwise {
+                            give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+                        }
+                    }
+                }
+                otherwise {
+                    give map [ node is map [ kind is "err", value is "" ], pos is p plus 1 ]
+                }
+            }
+        }
+    }
+}
+
+create str_eq using a, b {
+    make la be len with a
+    make lb be len with b
+    when la is not lb {
+        give 0
+    }
+    make i changeable 0
+    while i is below la {
+        make ca be ord with substring with a, i, i plus 1
+        make cb be ord with substring with b, i, i plus 1
+        when ca is not cb {
+            give 0
+        }
+        change i to i plus 1
+    }
+    give 1
+}
+
+create tok_is using tok, w {
+    when tok.type is 0 {
+        give str_eq with tok.value, w
+    }
+    give 0
+}
+
+create parse_mul using toks, p {
+    make prim be parse_primary with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 3 {
+                when tok.code is 42 {
+                    make r be parse_primary with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "*", left is l, right is rn ]
+                }
+                otherwise {
+                    when tok.code is 47 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "/", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                when (tok_is with tok, "times") is 1 {
+                    make r be parse_primary with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "times", left is l, right is rn ]
+                }
+                otherwise {
+                    change go to 0
+                }
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
+create parse_add using toks, p {
+    make prim be parse_mul with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 3 {
+                when tok.code is 43 {
+                    make r be parse_mul with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "+", left is l, right is rn ]
+                }
+                otherwise {
+                    when tok.code is 45 {
+                        make r be parse_mul with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "-", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                when (tok_is with tok, "plus") is 1 {
+                    make r be parse_mul with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "plus", left is l, right is rn ]
+                }
+                otherwise {
+                    when (tok_is with tok, "minus") is 1 {
+                        make r be parse_mul with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "minus", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
+create parse_comparison using toks, p {
+    make prim be parse_add with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 0 {
+                when (str_eq with tok.value, "is") is 1 {
+                    make op changeable "is"
+                    make m changeable n plus 1
+                    make consumed changeable 0
+                    when m is below L {
+                        make t2 be toks[m]
+                        when t2.type is 0 {
+                            when (str_eq with t2.value, "not") is 1 {
+                                change op to "is not"
+                                change m to m plus 1
+                                change consumed to 1
+                            }
+                            otherwise {
+                                when (str_eq with t2.value, "above") is 1 {
+                                    change op to "is above"
+                                    change m to m plus 1
+                                    change consumed to 1
+                                }
+                                otherwise {
+                                    when (str_eq with t2.value, "below") is 1 {
+                                        change op to "is below"
+                                        change m to m plus 1
+                                        change consumed to 1
+                                    }
+                                    otherwise {
+                                        when (str_eq with t2.value, "at") is 1 {
+                                            when (m plus 1) is below L {
+                                                make t3 be toks[m plus 1]
+                                                when t3.type is 0 {
+                                                    when (str_eq with t3.value, "least") is 1 {
+                                                        change op to "is at least"
+                                                        change m to m plus 2
+                                                        change consumed to 1
+                                                    }
+                                                    otherwise {
+                                                        when (str_eq with t3.value, "most") is 1 {
+                                                            change op to "is at most"
+                                                            change m to m plus 2
+                                                            change consumed to 1
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    make r be parse_add with toks, m
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "cmp", op is op, left is l, right is rn ]
+                }
+                otherwise {
+                    change go to 0
+                }
+            }
+            otherwise {
+                change go to 0
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
+create parse_expr using toks, p {
+    give parse_comparison with toks, p
+}
+
+create show_ast using node, depth {
+    make indent changeable ""
+    make i changeable 0
+    while i is below depth {
+        change indent to concat with indent, "  "
+        change i to i plus 1
+    }
+    make line be concat with indent, node.kind
+    show line
+    when node.kind is "binop" {
+        make t1 be concat with indent, "op="
+        make t2 be concat with t1, node.op
+        show t2
+        show_ast with node.left, depth plus 1
+        show_ast with node.right, depth plus 1
+    }
+    otherwise {
+        when node.kind is "id" {
+            make t3 be concat with indent, node.value
+            show t3
+        }
+        otherwise {
+            when node.kind is "int" {
+                make t4 be concat with indent, to_string with node.value
+                show t4
+            }
+        }
+    }
+}
+
+create parse_while using toks, p {
+    make c be parse_expr with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make r1 be map [ kind is "while", cond is c.node, body is tb.block ]
+    give map [ stmt is r1, pos is tb.pos ]
+}
+
+create parse_for_each using toks, p {
+    make vtok be toks[p plus 2]
+    make c be parse_expr with toks, p plus 4
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make r2 be map [ kind is "for", var is vtok.value, iter is c.node, body is tb.block ]
+    give map [ stmt is r2, pos is tb.pos ]
+}
+
+create parse_repeat_count using toks, p {
+    make prim be parse_primary with toks, p
+    make l changeable prim.node
+    make n changeable prim.pos
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when n is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[n]
+            when tok.type is 0 {
+                when (str_eq with tok.value, "plus") is 1 {
+                    make r be parse_primary with toks, n plus 1
+                    make rn be r.node
+                    change n to r.pos
+                    change l to map [ kind is "binop", op is "plus", left is l, right is rn ]
+                }
+                otherwise {
+                    when (str_eq with tok.value, "minus") is 1 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "minus", left is l, right is rn ]
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+            otherwise {
+                when tok.type is 3 {
+                    when tok.code is 43 {
+                        make r be parse_primary with toks, n plus 1
+                        make rn be r.node
+                        change n to r.pos
+                        change l to map [ kind is "binop", op is "+", left is l, right is rn ]
+                    }
+                    otherwise {
+                        when tok.code is 45 {
+                            make r be parse_primary with toks, n plus 1
+                            make rn be r.node
+                            change n to r.pos
+                            change l to map [ kind is "binop", op is "-", left is l, right is rn ]
+                        }
+                        otherwise {
+                            change go to 0
+                        }
+                    }
+                }
+                otherwise {
+                    change go to 0
+                }
+            }
+        }
+    }
+    give map [ node is l, pos is n ]
+}
+
+create parse_repeat using toks, p {
+    make c be parse_repeat_count with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q plus 1
+    make r1 be map [ kind is "repeat", count is c.node, body is tb.block ]
+    give map [ stmt is r1, pos is tb.pos ]
+}
+
+create parse_attempt using toks, p {
+    make tb be parse_block with toks, p plus 1
+    make q changeable tb.pos
+    make L be len with toks
+    make t2 changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    make os changeable 1
+    while os is 1 {
+        when q is at least L {
+            change os to 0
+        }
+        otherwise {
+            change t2 to toks[q]
+            when t2.type is 4 {
+                change q to q plus 1
+            }
+            otherwise {
+                change os to 0
+            }
+        }
+    }
+    make eb changeable []
+    make evn changeable ""
+    when q is below L {
+        change t2 to toks[q]
+        when t2.type is 0 {
+            when (str_eq with t2.value, "recover") is 1 {
+                make ev be toks[q plus 1]
+                make eb2 be parse_block with toks, q plus 2
+                change q to eb2.pos
+                change eb to eb2.block
+                change evn to ev.value
+            }
+        }
+    }
+    make a1 be map [ kind is "attempt", body is tb.block, handler is eb, errvar is evn ]
+    give map [ stmt is a1, pos is q ]
+}
+
+create parse_block using toks, p {
+    make stmts be []
+    make q changeable p plus 1
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.type is 4 {
+                change q to q plus 1
+            }
+            otherwise {
+                when tok.code is 125 {
+                    give map [ block is stmts, pos is q plus 1 ]
+                }
+                otherwise {
+                    when tok.type is 5 {
+                        change go to 0
+                    }
+                    otherwise {
+                        make r be parse_statement with toks, q
+                        add r.stmt to stmts
+                        change q to r.pos
+                    }
+                }
+            }
+        }
+    }
+    give map [ block is stmts, pos is q ]
+}
+
+create parse_create using toks, p {
+    make ntok be toks[p plus 1]
+    make params be []
+    make q changeable p plus 2
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    when q is below L {
+        change tok to toks[q]
+        when (str_eq with tok.value, "using") is 1 {
+            change q to q plus 1
+        }
+    }
+    while go is 1 {
+        when q is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[q]
+            when tok.code is 123 {
+                make b be parse_block with toks, q
+                make f1 be map [ kind is "function", name is ntok.value, params is params, body is b.block ]
+                give map [ stmt is f1, pos is b.pos ]
+            }
+            otherwise {
+                when tok.type is 0 {
+                    add tok.value to params
+                    change q to q plus 1
+                }
+                otherwise {
+                    when tok.type is 3 {
+                        change q to q plus 1
+                    }
+                    otherwise {
+                        change go to 0
+                    }
+                }
+            }
+        }
+    }
+    make f2 be map [ kind is "err", name is "" ]
+    give map [ stmt is f2, pos is p plus 1 ]
+}
+
+create parse_when using toks, p {
+    make c be parse_expr with toks, p plus 1
+    make q changeable c.pos
+    make tb be parse_block with toks, q
+    make eb changeable []
+    make q2 changeable tb.pos
+    make L be len with toks
+    make t2 changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    make os changeable 1
+    while os is 1 {
+        when q2 is at least L {
+            change os to 0
+        }
+        otherwise {
+            change t2 to toks[q2]
+            when t2.type is 4 {
+                change q2 to q2 plus 1
+            }
+            otherwise {
+                change os to 0
+            }
+        }
+    }
+    when q2 is below L {
+        change t2 to toks[q2]
+        when t2.type is 0 {
+            when (str_eq with t2.value, "otherwise") is 1 {
+                make eb2 be parse_block with toks, q2 plus 1
+                change q2 to eb2.pos
+                change eb to eb2.block
+            }
+        }
+    }
+    make w1 be map [ kind is "when", cond is c.node, then is tb.block, els is eb ]
+    give map [ stmt is w1, pos is q2 ]
+}
+
+create parse_statement using toks, p {
+    make tok be toks[p]
+    when tok.type is 0 {
+        when (str_eq with tok.value, "make") is 1 {
+            make ntok be toks[p plus 1]
+            make r be parse_expr with toks, p plus 3
+            make m1 be map [ kind is "make", name is ntok.value, value is r.node ]
+            give map [ stmt is m1, pos is r.pos ]
+        }
+        otherwise {
+            when (str_eq with tok.value, "show") is 1 {
+                make r be parse_expr with toks, p plus 1
+                make m2 be map [ kind is "show", expr is r.node ]
+                give map [ stmt is m2, pos is r.pos ]
+            }
+            otherwise {
+                when (str_eq with tok.value, "create") is 1 {
+                    give parse_create with toks, p
+                }
+                otherwise {
+                    when (str_eq with tok.value, "give") is 1 {
+                        make r be parse_expr with toks, p plus 1
+                        make m5 be map [ kind is "give", expr is r.node ]
+                        give map [ stmt is m5, pos is r.pos ]
+                    }
+                    otherwise {
+                        when (str_eq with tok.value, "when") is 1 {
+                            give parse_when with toks, p
+                        }
+                        otherwise {
+                            when (str_eq with tok.value, "while") is 1 {
+                                give parse_while with toks, p
+                            }
+                            otherwise {
+                            when (str_eq with tok.value, "for") is 1 {
+                                give parse_for_each with toks, p
+                            }
+                            otherwise {
+                                when (str_eq with tok.value, "repeat") is 1 {
+                                    give parse_repeat with toks, p
+                                }
+                                otherwise {
+                                    when (str_eq with tok.value, "stop") is 1 {
+                                        make ms be map [ kind is "stop" ]
+                                        give map [ stmt is ms, pos is p plus 1 ]
+                                    }
+                                    otherwise {
+                                        when (str_eq with tok.value, "skip") is 1 {
+                                            make mk be map [ kind is "skip" ]
+                                            give map [ stmt is mk, pos is p plus 1 ]
+                                        }
+                                        otherwise {
+                                            when (str_eq with tok.value, "attempt") is 1 {
+                                                give parse_attempt with toks, p
+                                            }
+                                            otherwise {
+                                                make m3 be map [ kind is "err", name is "" ]
+                                                give map [ stmt is m3, pos is p plus 1 ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    otherwise {
+        make m4 be map [ kind is "err", name is "" ]
+        give map [ stmt is m4, pos is p plus 1 ]
+    }
+}
+
+create parse_program using toks {
+    make stmts be []
+    make p changeable 0
+    make L be len with toks
+    make go changeable 1
+    make tok changeable map [ type is 0, value is "", code is 0, line is 0 ]
+    while go is 1 {
+        when p is at least L {
+            change go to 0
+        }
+        otherwise {
+            change tok to toks[p]
+            when tok.type is 4 {
+                change p to p plus 1
+            }
+            otherwise {
+                when tok.type is 5 {
+                    change go to 0
+                }
+                otherwise {
+                    make r be parse_statement with toks, p
+                    add r.stmt to stmts
+                    change p to r.pos
+                }
+            }
+        }
+    }
+    give stmts
+}
+create contains_name using lst, name {
+    for each n in lst {
+        when (str_eq with n, name) is 1 {
+            give 1
+        }
+    }
+    give 0
+}
+
+create add_unique using lst, name {
+    when (contains_name with lst, name) is 0 {
+        add name to lst
+    }
+    give lst
+}
+
+create collect_block using stmts, decls {
+    make acc changeable decls
+    for each st in stmts {
+        when (str_eq with st.kind, "make") is 1 {
+            change acc to add_unique with acc, st.name
+        }
+        otherwise {
+            when (str_eq with st.kind, "function") is 1 {
+                change acc to add_unique with acc, st.name
+                for each p in st.params {
+                    change acc to add_unique with acc, p
+                }
+                change acc to collect_block with st.body, acc
+            }
+            otherwise {
+                when (str_eq with st.kind, "for") is 1 {
+                    change acc to add_unique with acc, st.var
+                    change acc to collect_block with st.body, acc
+                }
+                otherwise {
+                    when (str_eq with st.kind, "when") is 1 {
+                        change acc to collect_block with st.then, acc
+                        change acc to collect_block with st.els, acc
+                    }
+                    otherwise {
+                        when (str_eq with st.kind, "while") is 1 {
+                            change acc to collect_block with st.body, acc
+                        }
+                        otherwise {
+                            when (str_eq with st.kind, "repeat") is 1 {
+                                change acc to collect_block with st.body, acc
+                            }
+                            otherwise {
+                                when (str_eq with st.kind, "attempt") is 1 {
+                                    change acc to collect_block with st.body, acc
+                                    change acc to collect_block with st.handler, acc
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give acc
+}
+
+create check_expr using node, decls, errors {
+    make er changeable errors
+    when (str_eq with node.kind, "id") is 1 {
+        when (contains_name with decls, node.value) is 0 {
+            add node.value to er
+        }
+    }
+    otherwise {
+        when (str_eq with node.kind, "binop") is 1 {
+            change er to check_expr with node.left, decls, er
+            change er to check_expr with node.right, decls, er
+        }
+        otherwise {
+            when (str_eq with node.kind, "cmp") is 1 {
+                change er to check_expr with node.left, decls, er
+                change er to check_expr with node.right, decls, er
+            }
+            otherwise {
+                when (str_eq with node.kind, "list") is 1 {
+                    for each it in node.items {
+                        change er to check_expr with it, decls, er
+                    }
+                }
+                otherwise {
+                    when (str_eq with node.kind, "map") is 1 {
+                        for each en in node.entries {
+                            change er to check_expr with en.value, decls, er
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give er
+}
+
+create check_block using stmts, decls, errors {
+    make er changeable errors
+    for each st in stmts {
+        when (str_eq with st.kind, "make") is 1 {
+            change er to check_expr with st.value, decls, er
+        }
+        otherwise {
+            when (str_eq with st.kind, "show") is 1 {
+                change er to check_expr with st.expr, decls, er
+            }
+            otherwise {
+                when (str_eq with st.kind, "give") is 1 {
+                    change er to check_expr with st.expr, decls, er
+                }
+                otherwise {
+                    when (str_eq with st.kind, "when") is 1 {
+                        change er to check_expr with st.cond, decls, er
+                        change er to check_block with st.then, decls, er
+                        change er to check_block with st.els, decls, er
+                    }
+                    otherwise {
+                        when (str_eq with st.kind, "while") is 1 {
+                            change er to check_expr with st.cond, decls, er
+                            change er to check_block with st.body, decls, er
+                        }
+                        otherwise {
+                            when (str_eq with st.kind, "repeat") is 1 {
+                                change er to check_expr with st.count, decls, er
+                                change er to check_block with st.body, decls, er
+                            }
+                            otherwise {
+                                when (str_eq with st.kind, "for") is 1 {
+                                    change er to check_expr with st.iter, decls, er
+                                    change er to check_block with st.body, decls, er
+                                }
+                                otherwise {
+                                    when (str_eq with st.kind, "attempt") is 1 {
+                                        change er to check_block with st.body, decls, er
+                                        change er to check_block with st.handler, decls, er
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    give er
+}
+
+create analyze_program using progs {
+    make decls be collect_block with progs, []
+    make errors be check_block with progs, decls, []
+    make decl_count be len with decls
+    make err_count be len with errors
+    give map [ decls is decl_count, errors is err_count ]
+}
+
+create main {
+    make src be "create f using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be f with 1, 2\nshow x\nmake bad be nope plus 1\n"
+    make toks be lex with src
+    make progs be parse_program with toks
+    make r be analyze_program with progs
+    show r.decls
+    show r.errors
+}
