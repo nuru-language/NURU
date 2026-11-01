@@ -40,6 +40,8 @@ typedef enum {
     NIR_CONCAT,
     NIR_ORD,
     NIR_CHR,
+    NIR_POW,
+    NIR_CONTAINS,
     NIR_ALLOC_LIST,
     NIR_LOAD_LIST_LEN,
     NIR_LOAD_ELT,

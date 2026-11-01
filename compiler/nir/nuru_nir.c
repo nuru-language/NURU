@@ -192,6 +192,8 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_CONCAT: return "CONCAT";
         case NIR_ORD: return "ORD";
         case NIR_CHR: return "CHR";
+        case NIR_POW: return "POW";
+        case NIR_CONTAINS: return "CONTAINS";
         case NIR_ALLOC_LIST: return "ALLOC_LIST";
         case NIR_LOAD_LIST_LEN: return "LOAD_LIST_LEN";
         case NIR_LOAD_ELT: return "LOAD_ELT";
