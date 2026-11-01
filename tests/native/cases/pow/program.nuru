@@ -1,0 +1,5 @@
+create main {
+    show pow with 2, 10
+    show pow with 3, 0
+    show pow with 5, 3
+}

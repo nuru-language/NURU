@@ -1,0 +1,5 @@
+yes
+ok
+empty_found
+1
+0

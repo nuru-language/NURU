@@ -1,0 +1,9 @@
+create main {
+    when contains with "hello world", "world" { show "yes" }
+    otherwise { show "no" }
+    when contains with "hello world", "xyz" { show "bad" }
+    otherwise { show "ok" }
+    when contains with "abc", "" { show "empty_found" }
+    show contains with "hello world", "world"
+    show contains with "hello", "hello world"
+}
