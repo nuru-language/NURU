@@ -175,6 +175,6 @@ Note on bootstrap test samples: Nuru treats `{`/`}` inside string literals as in
 
 Loops are covered by `tests/native/cases/parser_loops` (`while` and `for each`) and `tests/native/cases/parser_repeat` (`repeat <n> times`). `repeat` uses a dedicated count parser that stops at the `times` keyword, sidestepping the multiplication ambiguity.
 
-Still on the roadmap: the semantic stage, and a module/import mechanism.
+Stage 2 now parses all major statement forms: `make`/`show`/`give`, `create` functions, `when`/`otherwise`, `while`, `for each`, `repeat`, `attempt`/`recover`, `stop`/`skip`, plus list/map/string literals. Test coverage: `parser_stmt`, `parser_fn`, `parser_control`, `parser_cmp`, `parser_loops`, `parser_repeat`, `parser_attempt`, `parser_literals`.
 
-Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (wider integer/string support, a module/import mechanism).
+Remaining bootstrap work (a standing project): the semantic stage and code generation written in Nuru, plus a module/import mechanism and wider integer/string support.
