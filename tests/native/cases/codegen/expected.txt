@@ -9,26 +9,12 @@ main:
   push %rbp
   mov %rsp, %rbp
   sub $64, %rsp
-  mov $0, %rax
-  mov %rax, -8(%rbp)
   mov $3, %rax
-  mov %rax, -16(%rbp)
-.L0:
-  mov -16(%rbp), %rax
-  test %rax, %rax
-  jz .L1
-  mov -8(%rbp), %rax
   push %rax
-  mov $1, %rax
-  mov %rax, %rdx
-  pop %rax
-  add %rdx, %rax
+  mov $4, %rax
+  push %rax
+  call f
   mov %rax, -8(%rbp)
-  mov -16(%rbp), %rax
-  sub $1, %rax
-  mov %rax, -16(%rbp)
-  jmp .L0
-.L1:
   mov -8(%rbp), %rax
   mov %rax, %rdi
   call print_int
@@ -37,47 +23,16 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov -8(%rbp), %rax
-  push %rax
-  mov $3, %rax
-  mov %rax, %rdx
-  pop %rax
-  cmp %rdx, %rax
-  sete %al
-  movzbl %al, %eax
-  test %rax, %rax
-  jz .L2
   mov $10, %rax
-  mov %rax, %rdi
-  call print_int
-  mov $1, %rax
-  mov $1, %rdi
-  lea newline(%rip), %rsi
-  mov $1, %rdx
-  syscall
-  jmp .L3
-.L2:
-  mov $11, %rax
-  mov %rax, %rdi
-  call print_int
-  mov $1, %rax
-  mov $1, %rdi
-  lea newline(%rip), %rsi
-  mov $1, %rdx
-  syscall
-.L3:
-.L4:
-  mov -8(%rbp), %rax
+  mov %rax, -16(%rbp)
+  mov -16(%rbp), %rax
   push %rax
-  mov $6, %rax
+  mov $3, %rax
   mov %rax, %rdx
   pop %rax
-  cmp %rdx, %rax
-  setl %al
-  movzbl %al, %eax
-  test %rax, %rax
-  jz .L5
-  mov -8(%rbp), %rax
+  mov %rdx, %rcx
+  cqo
+  idiv %rcx
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -85,16 +40,16 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov -8(%rbp), %rax
+  mov -16(%rbp), %rax
   push %rax
-  mov $1, %rax
+  mov $4, %rax
   mov %rax, %rdx
   pop %rax
-  add %rdx, %rax
-  mov %rax, -8(%rbp)
-  jmp .L4
-.L5:
-  mov -8(%rbp), %rax
+  mov %rdx, %rcx
+  cqo
+  idiv %rcx
+  mov %rax, -24(%rbp)
+  mov -24(%rbp), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -102,6 +57,7 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
+.Lmainret:
   mov %rbp, %rsp
   pop %rbp
   ret
@@ -109,6 +65,27 @@ main:
 newline:
   .byte 10
 .text
+f:
+  push %rbp
+  mov %rsp, %rbp
+  sub $64, %rsp
+  mov 16(%rbp), %rax
+  mov %rax, -8(%rbp)
+  mov 24(%rbp), %rax
+  mov %rax, -16(%rbp)
+  mov -8(%rbp), %rax
+  push %rax
+  mov -16(%rbp), %rax
+  mov %rax, %rdx
+  pop %rax
+  add %rdx, %rax
+  mov %rax, -24(%rbp)
+  mov -24(%rbp), %rax
+  jmp .Lret_f
+.Lret_f:
+  mov %rbp, %rsp
+  pop %rbp
+  ret
 print_int:
   push %rbp
   mov %rsp, %rbp

@@ -209,6 +209,42 @@ create parse_primary using toks, p {
                 give parse_map_literal with toks, p
             }
             otherwise {
+                make L2 be len with toks
+                when (p plus 1) is below L2 {
+                    make nxt be toks[p plus 1]
+                    when nxt.type is 0 {
+                        when (str_eq with nxt.value, "with") is 1 {
+                            make args be []
+                            make q changeable p plus 2
+                            make go changeable 1
+                            make tcur changeable map [ type is 0, value is "", code is 0, line is 0 ]
+                            while go is 1 {
+                                when q is at least L2 {
+                                    change go to 0
+                                }
+                                otherwise {
+                                    make r be parse_expr with toks, q
+                                    add r.node to args
+                                    change q to r.pos
+                                    when q is below L2 {
+                                        change tcur to toks[q]
+                                        when tcur.code is 44 {
+                                            change q to q plus 1
+                                        }
+                                        otherwise {
+                                            change go to 0
+                                        }
+                                    }
+                                    otherwise {
+                                        change go to 0
+                                    }
+                                }
+                            }
+                            make call1 be map [ kind is "call", name is tok.value, args is args ]
+                            give map [ node is call1, pos is q ]
+                        }
+                    }
+                }
                 give map [ node is map [ kind is "id", value is tok.value ], pos is p plus 1 ]
             }
         }
@@ -894,57 +930,70 @@ create gen_expr using node, vars {
             }
         }
         otherwise {
-            when (str_eq with node.kind, "binop") is 1 {
-                make ls be gen_expr with node.left, vars
-                make rs be gen_expr with node.right, vars
-                make l2 be concat with ls, "  push %rax\n"
-                make l3 be concat with l2, rs
-                make l4 be concat with l3, "  mov %rax, %rdx\n"
-                make l5 be concat with l4, "  pop %rax\n"
-                when (str_eq with node.op, "plus") is 1 {
-                    make a1 be concat with l5, "  add %rdx, %rax\n"
-                    give a1
+            when (str_eq with node.kind, "call") is 1 {
+                make arglist be node.args
+                make code changeable ""
+                for each ar in arglist {
+                    make ae be gen_expr with ar, vars
+                    change code to concat with code, ae
+                    change code to concat with code, "  push %rax\n"
                 }
-                otherwise {
-                    when (str_eq with node.op, "minus") is 1 {
-                        make a2 be concat with l5, "  sub %rdx, %rax\n"
-                        give a2
-                    }
-                    otherwise {
-                        when (str_eq with node.op, "times") is 1 {
-                            make a3 be concat with l5, "  imul %rdx, %rax\n"
-                            give a3
-                        }
-                        otherwise {
-                            make a4 be concat with l5, "  xor %rdx, %rdx\n  idiv %rcx\n"
-                            give a4
-                        }
-                    }
-                }
+                make c1 be concat with code, "  call "
+                make nm be concat with node.name, "\n"
+                give concat with c1, nm
             }
             otherwise {
-                when (str_eq with node.kind, "cmp") is 1 {
-                    make cl be gen_expr with node.left, vars
-                    make cr be gen_expr with node.right, vars
-                    make c2 be concat with cl, "  push %rax\n"
-                    make c3 be concat with c2, cr
-                    make c4 be concat with c3, "  mov %rax, %rdx\n"
-                    make c5 be concat with c4, "  pop %rax\n"
-                    make c6 be concat with c5, "  cmp %rdx, %rax\n"
-                    make cc be setcc_for with node.op
-                    make c7 be concat with c6, "  set"
-                    make c8 be concat with c7, cc
-                    make c9 be concat with c8, " %al\n"
-                    give concat with c9, "  movzbl %al, %eax\n"
+                when (str_eq with node.kind, "binop") is 1 {
+                    make ls be gen_expr with node.left, vars
+                    make rs be gen_expr with node.right, vars
+                    make l2 be concat with ls, "  push %rax\n"
+                    make l3 be concat with l2, rs
+                    make l4 be concat with l3, "  mov %rax, %rdx\n"
+                    make l5 be concat with l4, "  pop %rax\n"
+                    when (str_eq with node.op, "plus") is 1 {
+                        make a1 be concat with l5, "  add %rdx, %rax\n"
+                        give a1
+                    }
+                    otherwise {
+                        when (str_eq with node.op, "minus") is 1 {
+                            make a2 be concat with l5, "  sub %rdx, %rax\n"
+                            give a2
+                        }
+                        otherwise {
+                            when (str_eq with node.op, "times") is 1 {
+                                make a3 be concat with l5, "  imul %rdx, %rax\n"
+                                give a3
+                            }
+                            otherwise {
+                                make a4 be concat with l5, "  mov %rdx, %rcx\n  cqo\n  idiv %rcx\n"
+                                give a4
+                            }
+                        }
+                    }
                 }
                 otherwise {
-                    give "  xor %eax, %eax\n"
+                    when (str_eq with node.kind, "cmp") is 1 {
+                        make cl be gen_expr with node.left, vars
+                        make cr be gen_expr with node.right, vars
+                        make c2 be concat with cl, "  push %rax\n"
+                        make c3 be concat with c2, cr
+                        make c4 be concat with c3, "  mov %rax, %rdx\n"
+                        make c5 be concat with c4, "  pop %rax\n"
+                        make c6 be concat with c5, "  cmp %rdx, %rax\n"
+                        make cc be setcc_for with node.op
+                        make c7 be concat with c6, "  set"
+                        make c8 be concat with c7, cc
+                        make c9 be concat with c8, " %al\n"
+                        give concat with c9, "  movzbl %al, %eax\n"
+                    }
+                    otherwise {
+                        give "  xor %eax, %eax\n"
+                    }
                 }
             }
         }
     }
 }
-
 
 create gen_show using expr, vars {
     make e be gen_expr with expr, vars
@@ -953,7 +1002,7 @@ create gen_show using expr, vars {
     give concat with s1, "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
 }
 
-create gen_block using stmts, vars, ctr {
+create gen_block using stmts, vars, ctr, retlabel {
     make asm changeable ""
     make c changeable ctr
     for each st in stmts {
@@ -989,90 +1038,98 @@ create gen_block using stmts, vars, ctr {
                     change asm to concat with asm, st3
                 }
                 otherwise {
-                    when (str_eq with st.kind, "when") is 1 {
-                        make cc2 be to_string with c
-                        change c to c plus 1
-                        make ce be to_string with c
-                        change c to c plus 1
-                        make cnd be gen_expr with st.cond, vars
-                        make c1 be concat with cnd, "  test %rax, %rax\n  jz .L"
-                        make c2 be concat with c1, cc2
-                        make c3 be concat with c2, "\n"
-                        make tb be gen_block with st.then, vars, c
-                        make c4 be concat with c3, tb.asm
-                        make c5 be concat with c4, "  jmp .L"
-                        make c6 be concat with c5, ce
-                        make c7 be concat with c6, "\n.L"
-                        make c8 be concat with c7, cc2
-                        make c9 be concat with c8, ":\n"
-                        make eb be gen_block with st.els, vars, tb.count
-                        make c10 be concat with c9, eb.asm
-                        make c11 be concat with c10, ".L"
-                        make c12 be concat with c11, ce
-                        make c13 be concat with c12, ":\n"
-                        change asm to concat with asm, c13
-                        change c to eb.count
+                    when (str_eq with st.kind, "give") is 1 {
+                        make ve be gen_expr with st.expr, vars
+                        make st1 be concat with ve, "  jmp "
+                        make st2 be concat with retlabel, "\n"
+                        change asm to concat with asm, concat with st1, st2
                     }
                     otherwise {
-                        when (str_eq with st.kind, "repeat") is 1 {
-                            make ctop be to_string with c
+                        when (str_eq with st.kind, "when") is 1 {
+                            make cc2 be to_string with c
                             change c to c plus 1
-                            make cend be to_string with c
-                            change c to c plus 1
-                            make hname be concat with "rept", ctop
-                            make idx changeable index_of with vars, hname
-                            when idx is 0 {
-                                add hname to vars
-                                change idx to len with vars
-                            }
-                            make off be to_string with idx times 8
-                            make cnd be gen_expr with st.count, vars
-                            make c1 be concat with cnd, "  mov %rax, -"
-                            make c2 be concat with c1, off
-                            make c3 be concat with c2, "(%rbp)\n.L"
-                            make c4 be concat with c3, ctop
-                            make c5 be concat with c4, ":\n  mov -"
-                            make c6 be concat with c5, off
-                            make c7 be concat with c6, "(%rbp), %rax\n  test %rax, %rax\n  jz .L"
-                            make c8 be concat with c7, cend
-                            make c9 be concat with c8, "\n"
-                            make tb be gen_block with st.body, vars, c
-                            make c10 be concat with c9, tb.asm
-                            make c11 be concat with c10, "  mov -"
-                            make c12 be concat with c11, off
-                            make c13 be concat with c12, "(%rbp), %rax\n  sub $1, %rax\n  mov %rax, -"
-                            make c14 be concat with c13, off
-                            make c15 be concat with c14, "(%rbp)\n  jmp .L"
-                            make c16 be concat with c15, ctop
-                            make c17 be concat with c16, "\n.L"
-                            make c18 be concat with c17, cend
-                            make c19 be concat with c18, ":\n"
-                            change asm to concat with asm, c19
-                            change c to tb.count
-                        }
-                        otherwise {
-                            when (str_eq with st.kind, "while") is 1 {
-                            make ctop be to_string with c
-                            change c to c plus 1
-                            make cend be to_string with c
+                            make ce be to_string with c
                             change c to c plus 1
                             make cnd be gen_expr with st.cond, vars
-                            make c1 be concat with ".L", ctop
-                            make c2 be concat with c1, ":\n"
-                            make c3 be concat with c2, cnd
-                            make c4 be concat with c3, "  test %rax, %rax\n  jz .L"
-                            make c5 be concat with c4, cend
-                            make c6 be concat with c5, "\n"
-                            make tb be gen_block with st.body, vars, c
-                            make c7 be concat with c6, tb.asm
-                            make c8 be concat with c7, "  jmp .L"
-                            make c9 be concat with c8, ctop
-                            make c10 be concat with c9, "\n.L"
-                            make c11 be concat with c10, cend
-                            make c12 be concat with c11, ":\n"
-                            change asm to concat with asm, c12
-                            change c to tb.count
+                            make c1 be concat with cnd, "  test %rax, %rax\n  jz .L"
+                            make c2 be concat with c1, cc2
+                            make c3 be concat with c2, "\n"
+                            make tb be gen_block with st.then, vars, c, retlabel
+                            make c4 be concat with c3, tb.asm
+                            make c5 be concat with c4, "  jmp .L"
+                            make c6 be concat with c5, ce
+                            make c7 be concat with c6, "\n.L"
+                            make c8 be concat with c7, cc2
+                            make c9 be concat with c8, ":\n"
+                            make eb be gen_block with st.els, vars, tb.count, retlabel
+                            make c10 be concat with c9, eb.asm
+                            make c11 be concat with c10, ".L"
+                            make c12 be concat with c11, ce
+                            make c13 be concat with c12, ":\n"
+                            change asm to concat with asm, c13
+                            change c to eb.count
                         }
+                        otherwise {
+                            when (str_eq with st.kind, "repeat") is 1 {
+                                make ctop be to_string with c
+                                change c to c plus 1
+                                make cend be to_string with c
+                                change c to c plus 1
+                                make hname be concat with "rept", ctop
+                                make idx changeable index_of with vars, hname
+                                when idx is 0 {
+                                    add hname to vars
+                                    change idx to len with vars
+                                }
+                                make off be to_string with idx times 8
+                                make cnd be gen_expr with st.count, vars
+                                make c1 be concat with cnd, "  mov %rax, -"
+                                make c2 be concat with c1, off
+                                make c3 be concat with c2, "(%rbp)\n.L"
+                                make c4 be concat with c3, ctop
+                                make c5 be concat with c4, ":\n  mov -"
+                                make c6 be concat with c5, off
+                                make c7 be concat with c6, "(%rbp), %rax\n  test %rax, %rax\n  jz .L"
+                                make c8 be concat with c7, cend
+                                make c9 be concat with c8, "\n"
+                                make tb be gen_block with st.body, vars, c, retlabel
+                                make c10 be concat with c9, tb.asm
+                                make c11 be concat with c10, "  mov -"
+                                make c12 be concat with c11, off
+                                make c13 be concat with c12, "(%rbp), %rax\n  sub $1, %rax\n  mov %rax, -"
+                                make c14 be concat with c13, off
+                                make c15 be concat with c14, "(%rbp)\n  jmp .L"
+                                make c16 be concat with c15, ctop
+                                make c17 be concat with c16, "\n.L"
+                                make c18 be concat with c17, cend
+                                make c19 be concat with c18, ":\n"
+                                change asm to concat with asm, c19
+                                change c to tb.count
+                            }
+                            otherwise {
+                                when (str_eq with st.kind, "while") is 1 {
+                                    make ctop be to_string with c
+                                    change c to c plus 1
+                                    make cend be to_string with c
+                                    change c to c plus 1
+                                    make cnd be gen_expr with st.cond, vars
+                                    make c1 be concat with ".L", ctop
+                                    make c2 be concat with c1, ":\n"
+                                    make c3 be concat with c2, cnd
+                                    make c4 be concat with c3, "  test %rax, %rax\n  jz .L"
+                                    make c5 be concat with c4, cend
+                                    make c6 be concat with c5, "\n"
+                                    make tb be gen_block with st.body, vars, c, retlabel
+                                    make c7 be concat with c6, tb.asm
+                                    make c8 be concat with c7, "  jmp .L"
+                                    make c9 be concat with c8, ctop
+                                    make c10 be concat with c9, "\n.L"
+                                    make c11 be concat with c10, cend
+                                    make c12 be concat with c11, ":\n"
+                                    change asm to concat with asm, c12
+                                    change c to tb.count
+                                }
+                            }
                         }
                     }
                 }
@@ -1082,18 +1139,61 @@ create gen_block using stmts, vars, ctr {
     give map [ asm is asm, count is c ]
 }
 
+create gen_function using fn, ctr {
+    make vars changeable fn.params
+    make r be gen_block with fn.body, vars, ctr, concat with ".Lret_", fn.name
+    make p0 be concat with fn.name, ":\n  push %rbp\n  mov %rsp, %rbp\n  sub $64, %rsp\n"
+    make paramcopy changeable ""
+    make i changeable 0
+    make np be len with fn.params
+    while i is below np {
+        make off be to_string with (i plus 1) times 8
+        make src be to_string with 16 plus i times 8
+        make pc1 be concat with "  mov ", src
+        make pc2 be concat with pc1, "(%rbp), %rax\n  mov %rax, -"
+        make pc3 be concat with pc2, off
+        make pc4 be concat with pc3, "(%rbp)\n"
+        change paramcopy to concat with paramcopy, pc4
+        change i to i plus 1
+    }
+    make body be concat with p0, paramcopy
+    make body2 be concat with body, r.asm
+    make ep be concat with ".Lret_", fn.name
+    make ep2 be concat with ep, ":\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
+    make full be concat with body2, ep2
+    give map [ asm is full, count is r.count ]
+}
+
 create gen_program using progs {
-    make r be gen_block with progs, [], 0
+    make main_stmts be []
+    make fns be []
+    for each st in progs {
+        when (str_eq with st.kind, "function") is 1 {
+            add st to fns
+        }
+        otherwise {
+            add st to main_stmts
+        }
+    }
+    make rmain be gen_block with main_stmts, [], 0, ".Lmainret"
+    make fcode changeable ""
+    make fall changeable rmain.count
+    for each fn in fns {
+        make fr be gen_function with fn, fall
+        change fcode to concat with fcode, fr.asm
+        change fall to fr.count
+    }
     make rt be "print_int:\n  push %rbp\n  mov %rsp, %rbp\n  sub $48, %rsp\n  mov %rdi, %rax\n  xor %r9, %r9\n  test %rax, %rax\n  jns pi_prep\n  mov $1, %r9\n  neg %rax\npi_prep:\n  mov $10, %rcx\n  lea 47(%rsp), %r8\n  movb $0, (%r8)\nprint_loop:\n  xor %rdx, %rdx\n  div %rcx\n  add $'0', %dl\n  dec %r8\n  mov %dl, (%r8)\n  test %rax, %rax\n  jnz print_loop\n  test %r9, %r9\n  jz pi_nosign\n  dec %r8\n  movb $'-', (%r8)\npi_nosign:\n  mov %r8, %rsi\n  lea 47(%rsp), %rdx\n  sub %r8, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n"
     make head be ".text\n.globl _start\n_start:\n  call main\n  mov $60, %rax\n  xor %rdi, %rdi\n  syscall\nmain:\n  push %rbp\n  mov %rsp, %rbp\n  sub $64, %rsp\n"
-    make tail be "  mov %rbp, %rsp\n  pop %rbp\n  ret\n.data\nnewline:\n  .byte 10\n.text\n"
-    make hc be concat with head, r.asm
-    make tc be concat with hc, tail
-    give concat with tc, rt
+    make tail be ".Lmainret:\n  mov %rbp, %rsp\n  pop %rbp\n  ret\n.data\nnewline:\n  .byte 10\n.text\n"
+    make hc be concat with head, rmain.asm
+    make hc2 be concat with hc, tail
+    make hc3 be concat with hc2, fcode
+    give concat with hc3, rt
 }
 
 create main {
-    make src be "make x be 0\nrepeat 3 times \{\nchange x to x plus 1\n\}\nshow x\nwhen x is 3 \{\nshow 10\n\}\notherwise \{\nshow 11\n\}\nwhile x is below 6 \{\nshow x\nchange x to x plus 1\n\}\nshow x\n"
+    make src be "create f using a, b \{\nmake r be a plus b\ngive r\n\}\nmake x be f with 3, 4\nshow x\nmake z be 10\nshow z / 3\nmake q be z / 4\nshow q\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs

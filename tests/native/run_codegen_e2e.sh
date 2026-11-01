@@ -26,12 +26,9 @@ echo "== stage: run the generated program =="
 "$TMP/prog" > "$TMP/out.txt"
 
 cat > "$TMP/want.txt" <<'EOF'
+7
 3
-10
-3
-4
-5
-6
+2
 EOF
 
 if diff -u "$TMP/want.txt" "$TMP/out.txt"; then
