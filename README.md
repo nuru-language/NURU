@@ -156,4 +156,12 @@ All documented language features are implemented and covered by native tests: fu
 
 Built-in functions: `show`, `ask` (read a line from stdin), `len` (string/list/map length), `abs`, `min`, `max`, `pow` (integer exponentiation), `to_number` (parse a string to an integer), `concat` (concatenate two strings), `substring(s, start, end)` (slice a string, with bounds clamping), `upper` (uppercase copy), `lower` (lowercase copy), `contains(s, sub)` (does `s` contain `sub` — returns 0/1), `index(s, sub)` (first position of `sub` in `s`, or -1), `ord` (first char code of a string), `chr` (integer → one-character string). String comparison (`is` / `is not`) works via literal interning (identical string constants share one descriptor).
 
-The runtime implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md` plus catchable divide-by-zero. Still on the roadmap: a wider standard library and self-hosting/bootstrap.
+The runtime implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md` plus catchable divide-by-zero.
+
+### Self-hosting / bootstrap
+
+Bootstrap is underway in `bootstrap/`. Stage 1, `bootstrap/lexer.nuru`, is a tokenizer for Nuru source written entirely in Nuru (identifiers, integers, strings, punctuation, newlines, EOF). It is covered by the native test `tests/native/cases/lexer`.
+
+Work on bootstrap surfaced and fixed two compiler defects: empty list/map literals (`[]`, `map []`) were rejected by the parser, and nested `when`/`otherwise` conditionals produced a broken control-flow graph (inner branches did not merge back to the enclosing continuation). Both are resolved.
+
+Still on the roadmap: the remaining compiler stages in Nuru (parser, semantic, code generation), plus language features those require (file I/O beyond `ask`, wider integer/string support).
