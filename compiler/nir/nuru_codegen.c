@@ -33,6 +33,14 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
     
     int frame_size = (int)(func->param_count + func->local_count) * 8 + 16;
     fprintf(cg->out, "  sub $%d, %%rsp\n", frame_size);
+    fprintf(cg->out, "  mov $%d, %%r10\n", frame_size);
+    fprintf(cg->out, "  lea (%%rsp), %%r11\n");
+    fprintf(cg->out, "  xor %%eax, %%eax\n");
+    fprintf(cg->out, ".frame_zero_%s:\n", func->name);
+    fprintf(cg->out, "  mov %%rax, (%%r11)\n");
+    fprintf(cg->out, "  add $8, %%r11\n");
+    fprintf(cg->out, "  sub $8, %%r10\n");
+    fprintf(cg->out, "  jnz .frame_zero_%s\n", func->name);
     
     const char* arg_regs[6] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
     for (size_t i = 0; i < func->param_count && i < 6; i++) {
