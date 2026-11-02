@@ -1,0 +1,12 @@
+create main {
+    show abs with -42
+    show min with 3, 7
+    show max with 3, 7
+    show min with -5, 2
+    show pow with 2, 4
+    show pow with 3, 0
+    make r be reverse with [1, 2, 3]
+    show r[0]
+    show r[1]
+    show r[2]
+}
