@@ -26,8 +26,9 @@ echo "== stage: run the generated program =="
 "$TMP/prog" > "$TMP/out.txt"
 
 cat > "$TMP/want.txt" <<'EOF'
-3
-2
+20
+30
+4
 99
 EOF
 

@@ -49,10 +49,40 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
             break;
             
         case AST_BINARY_OP:
-            emit_expr(irgen, node->binary_op.left);
-            emit_expr(irgen, node->binary_op.right);
             {
                 char* op = node->binary_op.operator;
+                if (strcmp(op, "and") == 0 || strcmp(op, "or") == 0) {
+                    NIRBasicBlock* false_block = make_block(irgen, "logf");
+                    NIRBasicBlock* true_block = make_block(irgen, "logt");
+                    NIRBasicBlock* end_block = make_block(irgen, "loge");
+
+                    emit_expr(irgen, node->binary_op.left);
+
+                    if (strcmp(op, "and") == 0) {
+                        nir_emit(irgen->current_block, NIR_JUMP_IF_FALSE, NULL, NULL, false_block, 0);
+                        emit_expr(irgen, node->binary_op.right);
+                        nir_emit(irgen->current_block, NIR_JUMP_IF_FALSE, NULL, NULL, false_block, 0);
+                        nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, true_block, 0);
+                    } else {
+                        nir_emit(irgen->current_block, NIR_JUMP_IF_TRUE, NULL, NULL, true_block, 0);
+                        emit_expr(irgen, node->binary_op.right);
+                        nir_emit(irgen->current_block, NIR_JUMP_IF_TRUE, NULL, NULL, true_block, 0);
+                        nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, false_block, 0);
+                    }
+
+                    irgen->current_block = true_block;
+                    emit(irgen, NIR_LOAD_CONST, nir_const_int(irgen->program, 1), NULL, NULL);
+                    nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, end_block, 0);
+
+                    irgen->current_block = false_block;
+                    emit(irgen, NIR_LOAD_CONST, nir_const_int(irgen->program, 0), NULL, NULL);
+                    nir_emit(irgen->current_block, NIR_JUMP, NULL, NULL, end_block, 0);
+
+                    irgen->current_block = end_block;
+                    break;
+                }
+                emit_expr(irgen, node->binary_op.left);
+                emit_expr(irgen, node->binary_op.right);
                 if (strcmp(op, "plus") == 0) emit(irgen, NIR_ADD, NULL, NULL, NULL);
                 else if (strcmp(op, "minus") == 0) emit(irgen, NIR_SUB, NULL, NULL, NULL);
                 else if (strcmp(op, "times") == 0) emit(irgen, NIR_MUL, NULL, NULL, NULL);
@@ -311,7 +341,8 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
                         emit_stmt(irgen, node->function_decl.body->block.statements[i]);
                     }
                 }
-                emit(irgen, NIR_RETURN, NULL, NULL, NULL);
+                emit(irgen, NIR_LOAD_CONST, nir_const_int(irgen->program, 0), NULL, NULL);
+                emit(irgen, NIR_RETURN_VALUE, NULL, NULL, NULL);
                 
                 irgen->current_func = old_func;
                 irgen->current_block = old_block;
@@ -440,10 +471,13 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
         case AST_FOR_EACH:
             {
                 ASTNode* iterable = node->for_each.iterable;
-                if (!iterable || iterable->type != AST_IDENTIFIER) {
+                if (!iterable) {
                     break;
                 }
-                const char* listname = iterable->identifier.name;
+                char iterbuf[32];
+                snprintf(iterbuf, sizeof(iterbuf), "for_iter_%d", irgen->temp_counter++);
+                nir_function_add_local(irgen->current_func, iterbuf);
+                const char* listname = iterbuf;
                 const char* var = node->for_each.variable;
 
                 char counter[32];
@@ -454,6 +488,8 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
                 }
 
                 NIRBasicBlock* pre_block = irgen->current_block;
+                emit_expr(irgen, iterable);
+                nir_emit(pre_block, NIR_STORE_VAR, nir_var_ref(iterbuf), NULL, NULL, 0);
                 nir_emit(pre_block, NIR_LOAD_CONST, nir_const_int(irgen->program, 0), NULL, NULL, 0);
                 nir_emit(pre_block, NIR_STORE_VAR, nir_var_ref(counter), NULL, NULL, 0);
 

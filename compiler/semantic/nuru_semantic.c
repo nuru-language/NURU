@@ -456,10 +456,15 @@ static void analyze_node(SemanticAnalyzer* analyzer, ASTNode* node) {
             break;
 
         case AST_INTEGER_LITERAL:
-        case AST_NUMBER_LITERAL:
         case AST_STRING_LITERAL:
         case AST_BOOLEAN_LITERAL:
         case AST_EMPTY_LITERAL:
+            break;
+
+        case AST_NUMBER_LITERAL:
+            semantic_error(analyzer,
+                "Number (floating-point) literals are not yet supported; use integer literals",
+                node->line, node->column);
             break;
 
         case AST_INTERP_STRING:

@@ -816,8 +816,17 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "\n.globl _start\n");
     fprintf(cg->out, "_start:\n");
     fprintf(cg->out, "  call main\n");
+    fprintf(cg->out, "  mov %%rax, %%rdi\n");
+    fprintf(cg->out, "  and $0xff, %%edi\n");
+    fprintf(cg->out, "  cmp $2, %%rdi\n");
+    fprintf(cg->out, "  jne .Lexit_zero\n");
+    fprintf(cg->out, "  mov %%rax, %%rdi\n");
+    fprintf(cg->out, "  sar $8, %%rdi\n");
+    fprintf(cg->out, "  jmp .Lexit_done\n");
+    fprintf(cg->out, ".Lexit_zero:\n");
+    fprintf(cg->out, "  xor %%edi, %%edi\n");
+    fprintf(cg->out, ".Lexit_done:\n");
     fprintf(cg->out, "  mov $60, %%rax\n");
-    fprintf(cg->out, "  xor %%rdi, %%rdi\n");
     fprintf(cg->out, "  syscall\n");
 
     if (main_func) {

@@ -1,0 +1,6 @@
+create main {
+    make person be map [ items is [5, 6, 7] ]
+    for each v in person.items {
+        show v
+    }
+}

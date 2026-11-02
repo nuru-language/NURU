@@ -958,7 +958,7 @@ create gen_expr using node, vars {
                             make e1 be gen_expr with a1, vars
                             make c1 be concat with e0, "  push %rax\n"
                             make c2 be concat with c1, e1
-                            make c3 be concat with c2, "  mov %rax, %rdx\n  pop %rax\n  mov %rax, %rbx\n  mov -8(%rbx), %rcx\n  lea 1(%rcx), %r8\n  mov %r8, %rdi\n  call alloc_list\n  mov %rax, %r9\n  mov %r8, -8(%r9)\n  xor %r10, %r10\ncp_loop:\n  cmp %r10, %rcx\n  jle cp_done\n  mov (%rbx,%r10,8), %r11\n  mov %r11, (%r9,%r10,8)\n  inc %r10\n  jmp cp_loop\ncp_done:\n  mov %rdx, (%r9,%rcx,8)\n  mov %r9, %rax\n"
+                            make c3 be concat with c2, "  mov %rax, %rdx\n  pop %rax\n  mov %rax, %rbx\n  mov -8(%rbx), %rcx\n  lea 1(%rcx), %r8\n  mov %r8, %rdi\n  call alloc_list\n  mov %rax, %r9\n  mov %r8, -8(%r9)\n  xor %r10, %r10\ncp_loop:\n  cmp %r10, %rcx\n  jle cp_done\n  mov 8(%rbx,%r10,8), %r11\n  mov %r11, 8(%r9,%r10,8)\n  inc %r10\n  jmp cp_loop\ncp_done:\n  mov %rdx, 8(%r9,%rcx,8)\n  mov %r9, %rax\n"
                             give c3
                         }
                         otherwise {
@@ -997,7 +997,7 @@ create gen_expr using node, vars {
                     make loff changeable ""
                     while li is below n {
                         change c5 to concat with c4, "  pop %rax\n  mov %rax, "
-                        change loff to to_string with 8 plus li times 8
+                        change loff to to_string with 8 plus (n minus 1 minus li) times 8
                         change c5 to concat with c5, loff
                         change c5 to concat with c5, "(%r11)\n"
                         change c4 to c5

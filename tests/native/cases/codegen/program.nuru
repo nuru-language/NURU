@@ -940,10 +940,37 @@ create gen_expr using node, vars {
                 otherwise {
                     make arglist be node.args
                     make code changeable ""
-                    for each ar in arglist {
-                        make ae be gen_expr with ar, vars
-                        change code to concat with code, ae
-                        change code to concat with code, "  push %rax\n"
+                    when (str_eq with node.name, "at") is 1 {
+                        make a0 be arglist[0]
+                        make a1 be arglist[1]
+                        make e0 be gen_expr with a0, vars
+                        make e1 be gen_expr with a1, vars
+                        make c1 be concat with e0, "  push %rax\n"
+                        make c2 be concat with c1, e1
+                        make c3 be concat with c2, "  mov %rax, %rcx\n  pop %rax\n  lea 8(%rax,%rcx,8), %rax\n  mov (%rax), %rax\n"
+                        give c3
+                    }
+                    otherwise {
+                        when (str_eq with node.name, "appended") is 1 {
+                            make a0 be arglist[0]
+                            make a1 be arglist[1]
+                            make e0 be gen_expr with a0, vars
+                            make e1 be gen_expr with a1, vars
+                            make c1 be concat with e0, "  push %rax\n"
+                            make c2 be concat with c1, e1
+                            make c3 be concat with c2, "  mov %rax, %rdx\n  pop %rax\n  mov %rax, %rbx\n  mov -8(%rbx), %rcx\n  lea 1(%rcx), %r8\n  mov %r8, %rdi\n  call alloc_list\n  mov %rax, %r9\n  mov %r8, -8(%r9)\n  xor %r10, %r10\ncp_loop:\n  cmp %r10, %rcx\n  jle cp_done\n  mov 8(%rbx,%r10,8), %r11\n  mov %r11, 8(%r9,%r10,8)\n  inc %r10\n  jmp cp_loop\ncp_done:\n  mov %rdx, 8(%r9,%rcx,8)\n  mov %r9, %rax\n"
+                            give c3
+                        }
+                        otherwise {
+                            for each ar in arglist {
+                                make ae be gen_expr with ar, vars
+                                change code to concat with code, ae
+                                change code to concat with code, "  push %rax\n"
+                            }
+                            make c1 be concat with code, "  call "
+                            make nm be concat with node.name, "\n"
+                            give concat with c1, nm
+                        }
                     }
                     make c1 be concat with code, "  call "
                     make nm be concat with node.name, "\n"
@@ -970,7 +997,7 @@ create gen_expr using node, vars {
                     make loff changeable ""
                     while li is below n {
                         change c5 to concat with c4, "  pop %rax\n  mov %rax, "
-                        change loff to to_string with 8 plus li times 8
+                        change loff to to_string with 8 plus (n minus 1 minus li) times 8
                         change c5 to concat with c5, loff
                         change c5 to concat with c5, "(%r11)\n"
                         change c4 to c5
@@ -1233,9 +1260,10 @@ create gen_program using progs {
 }
 
 create main {
-    make src be "make a be [1, 2, 3]\nshow len with a\nmake b be [10, 20]\nshow len with b\nshow 99\n"
+    make src be "make a be [10, 20, 30]\nshow at with a, 1\nshow at with a, 2\nmake b be appended with a, 99\nshow len with b\nshow at with b, 3\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs
     show asm
 }
+

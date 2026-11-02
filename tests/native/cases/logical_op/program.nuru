@@ -1,0 +1,9 @@
+create main {
+    show true and true
+    show true and false
+    show false and true
+    show false and false
+    show true or false
+    show false or true
+    show false or false
+}

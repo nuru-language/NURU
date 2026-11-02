@@ -9,25 +9,30 @@ main:
   push %rbp
   mov %rsp, %rbp
   sub $64, %rsp
-  mov $1, %rax
+  mov $10, %rax
   push %rax
-  mov $2, %rax
+  mov $20, %rax
   push %rax
-  mov $3, %rax
+  mov $30, %rax
   push %rax
   mov $3, %rdi
   call alloc_list
   mov %rax, %r11
   pop %rax
-  mov %rax, 8(%r11)
+  mov %rax, 24(%r11)
   pop %rax
   mov %rax, 16(%r11)
   pop %rax
-  mov %rax, 24(%r11)
+  mov %rax, 8(%r11)
   mov %r11, %rax
   mov %rax, -8(%rbp)
   mov -8(%rbp), %rax
-  mov -8(%rax), %rax
+  push %rax
+  mov $1, %rax
+  mov %rax, %rcx
+  pop %rax
+  lea 8(%rax,%rcx,8), %rax
+  mov (%rax), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax
@@ -35,18 +40,43 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov $10, %rax
+  mov -8(%rbp), %rax
   push %rax
-  mov $20, %rax
+  mov $2, %rax
+  mov %rax, %rcx
+  pop %rax
+  lea 8(%rax,%rcx,8), %rax
+  mov (%rax), %rax
+  mov %rax, %rdi
+  call print_int
+  mov $1, %rax
+  mov $1, %rdi
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  syscall
+  mov -8(%rbp), %rax
   push %rax
-  mov $2, %rdi
+  mov $99, %rax
+  mov %rax, %rdx
+  pop %rax
+  mov %rax, %rbx
+  mov -8(%rbx), %rcx
+  lea 1(%rcx), %r8
+  mov %r8, %rdi
   call alloc_list
-  mov %rax, %r11
-  pop %rax
-  mov %rax, 8(%r11)
-  pop %rax
-  mov %rax, 16(%r11)
-  mov %r11, %rax
+  mov %rax, %r9
+  mov %r8, -8(%r9)
+  xor %r10, %r10
+cp_loop:
+  cmp %r10, %rcx
+  jle cp_done
+  mov 8(%rbx,%r10,8), %r11
+  mov %r11, 8(%r9,%r10,8)
+  inc %r10
+  jmp cp_loop
+cp_done:
+  mov %rdx, 8(%r9,%rcx,8)
+  mov %r9, %rax
   mov %rax, -16(%rbp)
   mov -16(%rbp), %rax
   mov -8(%rax), %rax
@@ -57,7 +87,13 @@ main:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
-  mov $99, %rax
+  mov -16(%rbp), %rax
+  push %rax
+  mov $3, %rax
+  mov %rax, %rcx
+  pop %rax
+  lea 8(%rax,%rcx,8), %rax
+  mov (%rax), %rax
   mov %rax, %rdi
   call print_int
   mov $1, %rax

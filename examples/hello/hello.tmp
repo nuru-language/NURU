@@ -3,8 +3,17 @@
 .globl _start
 _start:
   call main
+  mov %rax, %rdi
+  and $0xff, %edi
+  cmp $2, %rdi
+  jne .Lexit_zero
+  mov %rax, %rdi
+  sar $8, %rdi
+  jmp .Lexit_done
+.Lexit_zero:
+  xor %edi, %edi
+.Lexit_done:
   mov $60, %rax
-  xor %rdi, %rdi
   syscall
 
 .globl main
@@ -31,6 +40,9 @@ main:
   call _print_value
   mov %r12, %rax
   call _decref
+  mov $2, %rax
+  push %rax
+  pop %rax
   mov %rbp, %rsp
   pop %rbp
   ret

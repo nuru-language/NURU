@@ -9,7 +9,7 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 TARGET = nuruc
 
-.PHONY: all clean test test-native test-ast test-safe-io
+.PHONY: all clean test test-native test-ast test-safe-io test-negative
 
 all: $(TARGET)
 
@@ -24,7 +24,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-test: test-native test-ast test-codegen-e2e test-safe-io
+test: test-native test-ast test-codegen-e2e test-safe-io test-negative
 
 test-native: $(TARGET)
 	@echo "Running native execution tests..."
@@ -41,3 +41,7 @@ test-ast: $(TARGET)
 test-safe-io: $(TARGET)
 	@echo "Running safe external-tool invocation tests..."
 	./tests/native/run_safe_io_tests.sh
+
+test-negative: $(TARGET)
+	@echo "Running compile-time diagnostic tests..."
+	./tests/native/run_negative_tests.sh

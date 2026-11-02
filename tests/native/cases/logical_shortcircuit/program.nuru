@@ -1,0 +1,11 @@
+create side using x {
+    show 99
+    give x
+}
+
+create main {
+    make a be false and side with true
+    show a
+    make b be true or side with false
+    show b
+}
