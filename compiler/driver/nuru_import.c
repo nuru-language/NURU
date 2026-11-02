@@ -279,14 +279,16 @@ static int collect_rec(const char* path, const char* stdlib_dir, IncludeSet* inc
         size_t linelen = end - start;
         if (linelen > 0 && src[end - 1] == '\r') linelen--;
 
-        size_t ns = 0, namelen = 0;
-        if (match_bring(src + start, linelen, &ns, &namelen)) {
+        size_t ns = 0, nlen = 0, fs = 0, fl = 0;
+        int sel = 0;
+        if (parse_bring(src + start, linelen, &ns, &nlen, &sel, &fs, &fl)) {
             char mpath[512];
-            if (!resolve_module(src + start + ns, namelen, stdlib_dir, mpath, sizeof(mpath))) {
+            if (!resolve_module(src + start + ns, nlen, stdlib_dir, mpath, sizeof(mpath))) {
                 char modname[256];
-                if (namelen >= sizeof(modname)) namelen = sizeof(modname) - 1;
-                memcpy(modname, src + start + ns, namelen);
-                modname[namelen] = '\0';
+                size_t mn = nlen;
+                if (mn >= sizeof(modname)) mn = sizeof(modname) - 1;
+                memcpy(modname, src + start + ns, mn);
+                modname[mn] = '\0';
                 snprintf(errbuf, errcap, "module '%s' not found (searched %s/, ./)",
                          modname, stdlib_dir ? stdlib_dir : ".");
                 ok = 0;
