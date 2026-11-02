@@ -1,0 +1,20 @@
+bring math
+bring text
+
+create main {
+    make person be map [ name is "Amina", age is 24, tags is ["x", "y"] ]
+    when (len with person.tags) is 2 and person.age is at least 18 {
+        show "adult"
+    }
+    otherwise {
+        show "minor"
+    }
+    show person.tags[1]
+    show starts_with with person.name, "Am"
+    show clamp with 7, 0, 5
+    make total changeable 0
+    for each t in person.tags {
+        change total to total plus len with t
+    }
+    show total
+}
