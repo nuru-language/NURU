@@ -41,6 +41,7 @@ static void print_help(const char* program) {
     printf("  -O0             Disable NIR optimization (default: on)\n");
     printf("  -S, --stdlib DIR  Module search directory (default: stdlib)\n");
     printf("  -h, --help      Show this help\n");
+    printf("  -V, --version   Show version\n");
 }
 
 static int parse_args(CompilerOptions* opts, int argc, char** argv) {
@@ -113,6 +114,11 @@ int main(int argc, char** argv) {
     if (!parse_args(&opts, argc, argv)) {
         fprintf(stderr, "Error parsing arguments\n");
         return 1;
+    }
+
+    if (opts.show_version) {
+        printf("NURU compiler v0.1.0\n");
+        return 0;
     }
 
     if (opts.show_help) {
