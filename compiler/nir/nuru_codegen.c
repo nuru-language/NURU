@@ -735,7 +735,27 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     {
                         int kidx = get_const_index(cg, instr->b);
                         int lbl = cg->label_counter++;
-                        fprintf(cg->out, "  pop %%r11\n");               /* map */
+                        int is_message = 0;
+                        if (instr->b && instr->b->kind == NIR_CONST_STR &&
+                            instr->b->string_value.length == 7 &&
+                            memcmp(instr->b->string_value.data, "message", 7) == 0) {
+                            is_message = 1;
+                        }
+                        fprintf(cg->out, "  pop %%r11\n");               /* map or error */
+                        fprintf(cg->out, "  mov %%r11, %%rax\n");
+                        fprintf(cg->out, "  and $0xff, %%eax\n");
+                        fprintf(cg->out, "  cmp $7, %%rax\n");
+                        fprintf(cg->out, "  jne .lf_map_%d\n", lbl);
+                        /* error object */
+                        fprintf(cg->out, "  shr $8, %%r11\n");
+                        if (is_message) {
+                            fprintf(cg->out, "  mov 8(%%r11), %%rax\n");
+                            fprintf(cg->out, "  call _incref\n");
+                        } else {
+                            fprintf(cg->out, "  mov $2, %%rax\n");
+                        }
+                        fprintf(cg->out, "  jmp .lf_push_%d\n", lbl);
+                        fprintf(cg->out, ".lf_map_%d:\n", lbl);
                         fprintf(cg->out, "  shr $8, %%r11\n");
                         fprintf(cg->out, "  mov 8(%%r11), %%rcx\n");     /* count */
                         fprintf(cg->out, "  lea 16(%%r11), %%r12\n");    /* entries */
@@ -753,17 +773,16 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                         fprintf(cg->out, "  inc %%r14\n");
                         fprintf(cg->out, "  jmp .map_search_loop_%d\n", lbl);
                         fprintf(cg->out, ".map_not_found_%d:\n", lbl);
-                        fprintf(cg->out, "  mov $0, %%rax\n");
-                        fprintf(cg->out, "  jmp .map_push_%d\n", lbl);
+                        fprintf(cg->out, "  mov $2, %%rax\n");
+                        fprintf(cg->out, "  jmp .lf_push_%d\n", lbl);
                         fprintf(cg->out, ".map_found_%d:\n", lbl);
                         fprintf(cg->out, "  lea (%%r14,%%r14), %%r15\n");
                         fprintf(cg->out, "  mov 8(%%r12,%%r15,8), %%rax\n");
                         fprintf(cg->out, "  call _incref\n");
-                        fprintf(cg->out, ".map_push_%d:\n", lbl);
+                        fprintf(cg->out, ".lf_push_%d:\n", lbl);
                         fprintf(cg->out, "  push %%rax\n");
                         fprintf(cg->out, "  mov %%r11, %%rax\n");
                         fprintf(cg->out, "  call _decref\n");
-                        fprintf(cg->out, ".map_done_%d:\n", lbl);
                     }
                     break;
 
@@ -995,6 +1014,12 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  idiv %%rcx\n");
     fprintf(cg->out, "  ret\n");
     fprintf(cg->out, ".cd_zero:\n");
+    fprintf(cg->out, "  lea _str_err_divzero(%%rip), %%rdi\n");
+    fprintf(cg->out, "  shl $8, %%rdi\n");
+    fprintf(cg->out, "  or $4, %%rdi\n");
+    fprintf(cg->out, "  mov $1, %%rsi\n");
+    fprintf(cg->out, "  call _mk_error\n");
+    fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
     fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
     fprintf(cg->out, "  test %%rdx, %%rdx\n");
     fprintf(cg->out, "  jz .cd_crash\n");
@@ -2002,6 +2027,8 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  je .inc_hdr\n");
     fprintf(cg->out, "  cmp $6, %%rdx\n");
     fprintf(cg->out, "  je .inc_hdr\n");
+    fprintf(cg->out, "  cmp $7, %%rdx\n");
+    fprintf(cg->out, "  je .inc_hdr\n");
     fprintf(cg->out, "  jmp .inc_done\n");
     fprintf(cg->out, ".inc_hdr:\n");
     fprintf(cg->out, "  mov %%rax, %%rdx\n");
@@ -2030,6 +2057,8 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  cmp $5, %%rdx\n");
     fprintf(cg->out, "  je .dr_obj\n");
     fprintf(cg->out, "  cmp $6, %%rdx\n");
+    fprintf(cg->out, "  je .dr_obj\n");
+    fprintf(cg->out, "  cmp $7, %%rdx\n");
     fprintf(cg->out, "  je .dr_obj\n");
     fprintf(cg->out, "  jmp .dr_done\n");
     fprintf(cg->out, ".dr_obj:\n");
