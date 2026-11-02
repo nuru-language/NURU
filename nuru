@@ -47,6 +47,15 @@ resolve_src() {
     fi
 }
 
+manifest_name() {
+    local mf="$1"
+    [[ -f "$mf" ]] || return 1
+    sed -n '/^\[project\]/,/^\[/p' "$mf" \
+        | grep -E '^[[:space:]]*name[[:space:]]*=' \
+        | head -1 \
+        | sed -E 's/^[[:space:]]*name[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/'
+}
+
 [[ $# -ge 1 ]] || { usage; exit 1; }
 cmd="$1"; shift
 
@@ -125,17 +134,29 @@ EOF
         ;;
     build)
         out=""
+        orig=""
         if [[ $# -ge 2 && "$1" == "-o" ]]; then
             out="$2"; shift 2
         fi
         [[ $# -eq 1 ]] || { echo "build: expected one source file" >&2; exit 1; }
-        src="$(resolve_src "$1")"
-        [[ -n "$src" ]] || { echo "build: no src/main.nuru in '$1'" >&2; exit 1; }
+        orig="$1"
+        src="$(resolve_src "$orig")"
+        [[ -n "$src" ]] || { echo "build: no src/main.nuru in '$orig'" >&2; exit 1; }
         if [[ -z "$out" ]]; then
-            base="$(basename "$src")"
-            out="${base%.nuru}"
+            if [[ -d "$orig" ]]; then
+                out="$(manifest_name "$orig/nuru.toml")"
+                if [[ -n "$out" ]]; then
+                    out="$orig/build/$out"
+                    mkdir -p "$orig/build"
+                fi
+            fi
+            if [[ -z "$out" ]]; then
+                base="$(basename "$src")"
+                out="${base%.nuru}"
+            fi
         fi
         "$NURUC" -o "$out" "$src" || exit $?
+        rm -f "$out.tmp" "$out.o"
         ;;
     run)
         [[ $# -eq 1 ]] || { echo "run: expected one source file" >&2; exit 1; }
