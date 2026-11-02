@@ -22,6 +22,7 @@ typedef struct {
     int show_semantic;
     int show_ir;
     int show_help;
+    int show_version;
     int disable_opt;
     const char* input_file;
     const char* output_file;
@@ -59,6 +60,8 @@ static int parse_args(CompilerOptions* opts, int argc, char** argv) {
             opts->output_file = argv[++i];
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             opts->show_help = 1;
+        } else if (strcmp(argv[i], "-V") == 0 || strcmp(argv[i], "--version") == 0) {
+            opts->show_version = 1;
         } else if (strcmp(argv[i], "-O0") == 0) {
             opts->disable_opt = 1;
         } else if ((strcmp(argv[i], "--stdlib") == 0 || strcmp(argv[i], "-S") == 0) && i + 1 < argc) {
