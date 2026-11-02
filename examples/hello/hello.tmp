@@ -53,6 +53,8 @@ _newline:
   .byte 10
 _err_jmp:
   .quad 0
+_err_value:
+  .quad 0
 _lit_lo:
 _str0:
   .quad 0
@@ -71,6 +73,10 @@ _str_empty:
   .quad 0
   .quad 5
   .byte 'e','m','p','t','y'
+_str_err_divzero:
+  .quad 0
+  .quad 16
+  .byte 'd','i','v','i','s','i','o','n',' ','b','y',' ','z','e','r','o'
 
 .text
 
@@ -181,6 +187,12 @@ _checked_div:
   idiv %rcx
   ret
 .cd_zero:
+  lea _str_err_divzero(%rip), %rdi
+  shl $8, %rdi
+  or $4, %rdi
+  mov $1, %rsi
+  call _mk_error
+  mov %rax, _err_value(%rip)
   mov _err_jmp(%rip), %rdx
   test %rdx, %rdx
   jz .cd_crash
@@ -198,6 +210,12 @@ _checked_mod:
   mov %rdx, %rax
   ret
 .cm_zero:
+  lea _str_err_divzero(%rip), %rdi
+  shl $8, %rdi
+  or $4, %rdi
+  mov $1, %rsi
+  call _mk_error
+  mov %rax, _err_value(%rip)
   mov _err_jmp(%rip), %rdx
   test %rdx, %rdx
   jz .cm_crash
@@ -1121,6 +1139,27 @@ _remove:
   pop %rbx
   ret
 
+.globl _mk_error
+_mk_error:
+  push %rbx
+  push %r12
+  push %r13
+  mov %rdi, %r12
+  mov %rsi, %r13
+  mov $24, %rdi
+  call _alloc
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r12, 8(%rbx)
+  mov %r13, 16(%rbx)
+  mov %rbx, %rax
+  shl $8, %rax
+  or $7, %rax
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
 .globl _alloc
 _alloc:
   add $15, %rdi
@@ -1175,6 +1214,8 @@ _incref:
   je .inc_hdr
   cmp $6, %rdx
   je .inc_hdr
+  cmp $7, %rdx
+  je .inc_hdr
   jmp .inc_done
 .inc_hdr:
   mov %rax, %rdx
@@ -1203,6 +1244,8 @@ _decref:
   cmp $5, %rdx
   je .dr_obj
   cmp $6, %rdx
+  je .dr_obj
+  cmp $7, %rdx
   je .dr_obj
   jmp .dr_done
 .dr_obj:
