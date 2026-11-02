@@ -1,0 +1,3 @@
+create triple using x {
+    give x times 3
+}

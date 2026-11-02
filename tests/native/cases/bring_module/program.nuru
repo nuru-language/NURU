@@ -1,9 +1,9 @@
 bring math
+bring math
+bring core
 
 create main {
     show square with 7
-    show cube with 3
+    show triple with 4
     show clamp with 15, 0, 10
-    show clamp with -5, 0, 10
-    show clamp with 5, 0, 10
 }
