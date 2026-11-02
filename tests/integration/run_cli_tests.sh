@@ -57,6 +57,16 @@ else
     echo "FAIL  cli_new_dir"; fail=$((fail+1))
 fi
 
+# manifest module_path + local module
+printf 'create greet using name {\n give concat with "Hello, ", name\n}\n' > "$d/lib/greet.nuru"
+printf 'module_path = "lib"\n' >> "$d/nuru.toml"
+printf 'bring greet\n\ncreate main {\n show greet with "Nuru"\n}\n' > "$d/src/main.nuru"
+if [[ "$(./nuru run "$d" 2>/dev/null | tail -1)" == "Hello, Nuru" ]]; then
+    echo "PASS  cli_module_path"; pass=$((pass+1))
+else
+    echo "FAIL  cli_module_path"; fail=$((fail+1))
+fi
+
 # test subcommand
 printf 'create main {\n show 42\n}\n' > "$d/tests/ok.nuru"
 printf '42\n' > "$d/tests/ok.expected"
