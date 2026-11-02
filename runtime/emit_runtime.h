@@ -20,5 +20,6 @@ void nuru_emit_literal_data(FILE* out, struct NIRProgram* program);
 
 /* Emit the I/O helpers (_print_int, _print_value[_raw], _write_string). */
 void nuru_emit_io_helpers(FILE* out);
+void nuru_emit_rt_helpers(FILE* out);
 
 #endif /* NURU_EMIT_RUNTIME_H */
