@@ -2031,6 +2031,17 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  mov $0, %%rax\n");
     fprintf(cg->out, "  ret\n");
 
+    /* Signed multiply with overflow checks. rax = a (payload), rdx = b (payload).
+     * Returns the 56-bit-fitted product in rax on success; raises "integer
+     * overflow" on 64-bit signed overflow or on a non-56-bit result. */
+    fprintf(cg->out, "\n.globl _checked_mul\n");
+    fprintf(cg->out, "_checked_mul:\n");
+    fprintf(cg->out, "  imul %%rdx, %%rax\n");
+    fprintf(cg->out, "  jo .cmul_of\n");
+    fprintf(cg->out, "  jmp _check_int\n");
+    fprintf(cg->out, ".cmul_of:\n");
+    fprintf(cg->out, "  jmp _raise_overflow\n");
+
     /* Check that rax holds a 56-bit integer payload (fits the tagged encoding).
      * Returns unchanged on success; raises "integer overflow" otherwise. */
     fprintf(cg->out, "\n.globl _check_int\n");
