@@ -45,3 +45,9 @@ test-safe-io: $(TARGET)
 test-negative: $(TARGET)
 	@echo "Running compile-time diagnostic tests..."
 	./tests/native/run_negative_tests.sh
+
+test-nir-opt: $(TARGET)
+	@echo "Running NIR optimizer unit tests..."
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/test_optimizer tests/nir/test_optimizer.c \
+		$(BUILD_DIR)/nir/nuru_nir.o $(BUILD_DIR)/optimizer/nuru_optimizer.o
+	./$(BUILD_DIR)/test_optimizer
