@@ -824,6 +824,10 @@ CodeGen* codegen_create(const char* filename, NIRProgram* program) {
     CodeGen* cg = calloc(1, sizeof(CodeGen));
     cg->program = program;
     cg->out = fopen(filename, "w");
+    if (!cg->out) {
+        free(cg);
+        return NULL;
+    }
     return cg;
 }
 
