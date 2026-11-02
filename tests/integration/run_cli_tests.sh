@@ -119,14 +119,17 @@ else
     echo "FAIL  cli_doctor"; fail=$((fail+1))
 fi
 
-# format
-printf 'create main {   \n    show 1   \n\n\n    show 2\n}\n' > "$d/fmt.nuru"
-printf '%s\n' 'create main {' '    show 1' '' '    show 2' '}' > "$d/fmt.expected"
-if diff -q <(./nuru format "$d/fmt.nuru") "$d/fmt.expected" >/dev/null 2>&1; then
+# format (uses its own temp dir)
+fd="$(mktemp -d)"
+printf 'create main {   \n    show 1   \n\n\n    show 2\n}\n' > "$fd/fmt.nuru"
+printf '%s\n' 'create main {' '    show 1' '' '    show 2' '}' > "$fd/fmt.expected"
+if ./nuru format "$fd/fmt.nuru" > "$fd/out.txt" 2>/dev/null &&
+   cmp -s "$fd/out.txt" "$fd/fmt.expected"; then
     echo "PASS  cli_format"; pass=$((pass+1))
 else
     echo "FAIL  cli_format"; fail=$((fail+1))
 fi
+rm -rf "$fd"
 
 echo
 echo "cli tests: $pass passed, $fail failed"
