@@ -25,6 +25,7 @@ typedef struct {
     int disable_opt;
     const char* input_file;
     const char* output_file;
+    const char* stdlib_dir;
 } CompilerOptions;
 
 static void print_help(const char* program) {
@@ -42,6 +43,7 @@ static void print_help(const char* program) {
 
 static int parse_args(CompilerOptions* opts, int argc, char** argv) {
     memset(opts, 0, sizeof(*opts));
+    opts->stdlib_dir = "stdlib";
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tokens") == 0) {
@@ -58,6 +60,8 @@ static int parse_args(CompilerOptions* opts, int argc, char** argv) {
             opts->show_help = 1;
         } else if (strcmp(argv[i], "-O0") == 0) {
             opts->disable_opt = 1;
+        } else if ((strcmp(argv[i], "--stdlib") == 0 || strcmp(argv[i], "-S") == 0) && i + 1 < argc) {
+            opts->stdlib_dir = argv[++i];
         } else if (argv[i][0] != '-') {
             opts->input_file = argv[i];
         }
@@ -128,7 +132,7 @@ int main(int argc, char** argv) {
         char errmsg[256];
         size_t expanded_size;
         char* expanded = nuru_expand_imports(source, source_size, &expanded_size,
-                                             "stdlib", errmsg, sizeof(errmsg));
+                                             opts.stdlib_dir, errmsg, sizeof(errmsg));
         if (!expanded) {
             fprintf(stderr, "Import error: %s\n", errmsg);
             free(source);
