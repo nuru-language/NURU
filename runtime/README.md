@@ -20,7 +20,7 @@ Tags currently defined:
 |-----|---------------|---------|
 | 0   | empty         | unused (0) |
 | 1   | boolean       | 0 or 1 |
-| 2   | integer       | signed 64-bit integer |
+| 2   | integer       | signed 56-bit integer |
 | 4   | string        | pointer to string object |
 | 5   | list          | pointer to list object |
 | 6   | map           | pointer to map object |
@@ -29,6 +29,12 @@ Tags currently defined:
 For object kinds (4–7), the payload is the address of the object header. For
 integer and boolean, the payload is the value itself. `0` (all bits clear)
 denotes the empty value.
+
+**Integer range.** The `payload << 8 | tag` encoding reserves the low 8 bits
+for the tag, so integer payloads are limited to a **signed 56-bit** range
+(`-2^55 .. 2^55-1`). Integer literals outside this range are rejected at
+compile time; arithmetic that would leave the range raises an `"integer
+overflow"` runtime error instead of silently truncating.
 
 ## 2. Object layout
 
