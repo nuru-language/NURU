@@ -117,21 +117,14 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     break;
                     
                 case NIR_MUL:
-                    {
-                        int lbl = cg->label_counter++;
-                        fprintf(cg->out, "  pop %%rdx\n");
-                        fprintf(cg->out, "  pop %%rax\n");
-                        fprintf(cg->out, "  sar $8, %%rax\n");
-                        fprintf(cg->out, "  sar $8, %%rdx\n");
-                        fprintf(cg->out, "  imul %%rdx, %%rax\n");
-                        fprintf(cg->out, "  jo .mul_of_%d\n", lbl);
-                        fprintf(cg->out, "  call _check_int\n");
-                        fprintf(cg->out, "  shl $8, %%rax\n");
-                        fprintf(cg->out, "  or $2, %%rax\n");
-                        fprintf(cg->out, "  push %%rax\n");
-                        fprintf(cg->out, ".mul_of_%d:\n", lbl);
-                        fprintf(cg->out, "  jmp _raise_overflow\n");
-                    }
+                    fprintf(cg->out, "  pop %%rdx\n");
+                    fprintf(cg->out, "  pop %%rax\n");
+                    fprintf(cg->out, "  sar $8, %%rax\n");
+                    fprintf(cg->out, "  sar $8, %%rdx\n");
+                    fprintf(cg->out, "  call _checked_mul\n");
+                    fprintf(cg->out, "  shl $8, %%rax\n");
+                    fprintf(cg->out, "  or $2, %%rax\n");
+                    fprintf(cg->out, "  push %%rax\n");
                     break;
                     
                 case NIR_DIV:
