@@ -61,6 +61,7 @@ typedef enum {
     NIR_ERR_SAVE,
     NIR_ERR_SET,
     NIR_ERR_RESTORE,
+    NIR_LOAD_ERR,
     NIR_DISCARD,
     NIR_HALT,
 } NIROpcode;

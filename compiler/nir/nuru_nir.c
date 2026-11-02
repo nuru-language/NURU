@@ -213,6 +213,7 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_ERR_SAVE: return "ERR_SAVE";
         case NIR_ERR_SET: return "ERR_SET";
         case NIR_ERR_RESTORE: return "ERR_RESTORE";
+        case NIR_LOAD_ERR: return "LOAD_ERR";
         case NIR_DISCARD: return "DISCARD";
         case NIR_HALT: return "HALT";
         default: return "UNKNOWN";

@@ -576,7 +576,7 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
 
                 irgen->current_block = recover;
                 if (node->attempt.error_var) {
-                    nir_emit(recover, NIR_LOAD_CONST, nir_const_int(irgen->program, 1), NULL, NULL, 0);
+                    nir_emit(recover, NIR_LOAD_ERR, NULL, NULL, NULL, 0);
                     nir_emit(recover, NIR_STORE_VAR, nir_var_ref(node->attempt.error_var), NULL, NULL, 0);
                 }
                 ASTNode* rb = node->attempt.recover_block;
