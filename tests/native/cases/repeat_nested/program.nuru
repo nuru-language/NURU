@@ -1,0 +1,20 @@
+create main {
+    make out be []
+    repeat 3 times {
+        make row be []
+        repeat 4 times {
+            add [9] to row
+        }
+        add row to out
+    }
+    show len with out
+    show len with out[0]
+    show len with out[2]
+    make total changeable 0
+    repeat 3 times {
+        repeat 4 times {
+            change total to total plus 1
+        }
+    }
+    show total
+}

@@ -435,7 +435,9 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
             
         case AST_REPEAT:
             {
-                char* counter = "repeat_counter";
+                char counter[32];
+                snprintf(counter, sizeof(counter), "repeat_counter_%d", irgen->temp_counter++);
+                nir_function_add_local(irgen->current_func, counter);
                 NIRBasicBlock* pre_block = irgen->current_block;
                 emit(irgen, NIR_LOAD_CONST, nir_const_int(irgen->program, 0), NULL, NULL);
                 emit(irgen, NIR_STORE_VAR, nir_var_ref(counter), NULL, NULL);
