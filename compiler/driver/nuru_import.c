@@ -146,6 +146,115 @@ static int expand_file(const char* path, IncludeSet* included, FILE* out,
     return ok;
 }
 
+static int collect_rec(const char* path, const char* stdlib_dir, IncludeSet* inc,
+                       char*** paths, size_t* count, size_t* cap,
+                       char* errbuf, size_t errcap) {
+    if (set_has(inc, path)) return 1;
+    if (!set_add(inc, path)) {
+        snprintf(errbuf, errcap, "out of memory while resolving imports");
+        return 0;
+    }
+    char* src = NULL;
+    size_t len = 0;
+    if (!read_file(path, &src, &len)) {
+        snprintf(errbuf, errcap, "cannot read module file '%s'", path);
+        return 0;
+    }
+
+    if (*count >= *cap) {
+        *cap = *cap == 0 ? 16 : *cap * 2;
+        char** tmp = realloc(*paths, sizeof(char*) * *cap);
+        if (!tmp) { free(src); snprintf(errbuf, errcap, "out of memory"); return 0; }
+        *paths = tmp;
+    }
+    (*paths)[(*count)++] = strdup(path);
+
+    size_t start = 0;
+    int ok = 1;
+    while (start <= len && ok) {
+        size_t end = start;
+        while (end < len && src[end] != '\n') end++;
+        size_t linelen = end - start;
+        if (linelen > 0 && src[end - 1] == '\r') linelen--;
+
+        size_t ns = 0, namelen = 0;
+        if (match_bring(src + start, linelen, &ns, &namelen)) {
+            char mpath[512];
+            if (!resolve_module(src + start + ns, namelen, stdlib_dir, mpath, sizeof(mpath))) {
+                char modname[256];
+                if (namelen >= sizeof(modname)) namelen = sizeof(modname) - 1;
+                memcpy(modname, src + start + ns, namelen);
+                modname[namelen] = '\0';
+                snprintf(errbuf, errcap, "module '%s' not found (searched %s/, ./)",
+                         modname, stdlib_dir ? stdlib_dir : ".");
+                ok = 0;
+                break;
+            }
+            if (!collect_rec(mpath, stdlib_dir, inc, paths, count, cap, errbuf, errcap)) {
+                ok = 0;
+                break;
+            }
+        }
+        if (end < len) start = end + 1;
+        else break;
+    }
+    free(src);
+    return ok;
+}
+
+size_t nuru_collect_imports(const char* src, size_t len, const char* stdlib_dir,
+                            char*** out_paths, char* errbuf, size_t errcap) {
+    IncludeSet included = {0};
+    size_t cap = 16, count = 0;
+    char** paths = malloc(sizeof(char*) * cap);
+    if (!paths) {
+        snprintf(errbuf, errcap, "out of memory");
+        return (size_t)-1;
+    }
+
+    size_t start = 0;
+    int ok = 1;
+    while (start <= len && ok) {
+        size_t end = start;
+        while (end < len && src[end] != '\n') end++;
+        size_t linelen = end - start;
+        if (linelen > 0 && src[end - 1] == '\r') linelen--;
+
+        size_t ns = 0, namelen = 0;
+        if (match_bring(src + start, linelen, &ns, &namelen)) {
+            char mpath[512];
+            if (!resolve_module(src + start + ns, namelen, stdlib_dir, mpath, sizeof(mpath))) {
+                char modname[256];
+                if (namelen >= sizeof(modname)) namelen = sizeof(modname) - 1;
+                memcpy(modname, src + start + ns, namelen);
+                modname[namelen] = '\0';
+                snprintf(errbuf, errcap, "module '%s' not found (searched %s/, ./)",
+                         modname, stdlib_dir ? stdlib_dir : ".");
+                ok = 0;
+                break;
+            }
+            if (!collect_rec(mpath, stdlib_dir, &included, &paths, &count, &cap,
+                             errbuf, errcap)) {
+                ok = 0;
+                break;
+            }
+        }
+        if (end < len) start = end + 1;
+        else break;
+    }
+
+    for (size_t i = 0; i < included.count; i++) free(included.names[i]);
+    free(included.names);
+
+    if (!ok) {
+        for (size_t i = 0; i < count; i++) free(paths[i]);
+        free(paths);
+        return (size_t)-1;
+    }
+    *out_paths = paths;
+    return count;
+}
+
 char* nuru_expand_imports(const char* src, size_t len, size_t* out_len,
                           const char* stdlib_dir,
                           char* errbuf, size_t errcap) {
