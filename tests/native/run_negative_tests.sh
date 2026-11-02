@@ -51,6 +51,29 @@ create main {
 ' \
     "module 'does_not_exist' not found"
 
+# A top-level executable statement must be rejected with a diagnostic, not crash.
+check_rejects "toplevel_statement_rejected" \
+    'show 1
+' \
+    "top-level statements are not allowed"
+
+# An unwritable output path must be a graceful, nonzero error, not a segfault.
+srcfile="$(mktemp)"
+log="$(mktemp)"
+printf 'create main {\n show 1\n}\n' > "$srcfile"
+if "$NURUC" -o /nonexistent_dir/out "$srcfile" >"$log" 2>&1; then
+    echo "FAIL  unwritable_output  (compile unexpectedly succeeded)"
+    fail=$((fail+1))
+elif grep -q "cannot create assembly file" "$log"; then
+    echo "PASS  unwritable_output"
+    pass=$((pass+1))
+else
+    echo "FAIL  unwritable_output  (no diagnostic; log below)"
+    sed 's/^/      /' "$log"
+    fail=$((fail+1))
+fi
+rm -f "$srcfile" "$log"
+
 echo
 echo "negative tests: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
