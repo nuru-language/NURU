@@ -20,7 +20,18 @@ void nir_program_free(NIRProgram* program) {
         NIRBasicBlock* b = f->entry;
         while (b) {
             for (size_t j = 0; j < b->instruction_count; j++) {
-                free(b->instructions[j]);
+                NIRInstruction* instr = b->instructions[j];
+                /* free per-instruction owned values (variable references); */
+                /* program constants are owned by program->constants above   */
+                if (instr->a && instr->a->kind == NIR_VAR) {
+                    free((void*)instr->a->name);
+                    free(instr->a);
+                }
+                if (instr->b && instr->b->kind == NIR_VAR) {
+                    free((void*)instr->b->name);
+                    free(instr->b);
+                }
+                free(instr);
             }
             free(b->instructions);
             NIRBasicBlock* next = b->next;

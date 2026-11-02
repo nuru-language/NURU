@@ -309,12 +309,22 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Assembly failed\n");
         /* keep asm */
         unlink(objfile);
+        free(outfile);
+        free(asmfile);
+        free(objfile);
+        free(tmpasm);
+        irgen_free(irgen);
         return 1;
     }
     if (nuru_link(objfile, outfile) != 0) {
         fprintf(stderr, "Linking failed\n");
         /* keep asm */
         unlink(objfile);
+        free(outfile);
+        free(asmfile);
+        free(objfile);
+        free(tmpasm);
+        irgen_free(irgen);
         return 1;
     }
 

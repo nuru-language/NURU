@@ -40,7 +40,6 @@ void semantic_init(SemanticAnalyzer* analyzer);
 void semantic_free(SemanticAnalyzer* analyzer);
 
 int semantic_analyze(SemanticAnalyzer* analyzer, ASTNode* program);
-int semantic_check_function(SemanticAnalyzer* analyzer, ASTNode* func);
 
 Symbol* scope_lookup(Scope* scope, const char* name);
 Symbol* scope_lookup_current(Scope* scope, const char* name);
