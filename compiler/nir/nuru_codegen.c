@@ -867,7 +867,6 @@ int codegen_emit(CodeGen* cg) {
     // Entry point
     fprintf(cg->out, "\n.globl _start\n");
     fprintf(cg->out, "_start:\n");
-    fprintf(cg->out, "  mov %%rsp, _stack_low(%%rip)\n");
     fprintf(cg->out, "  call main\n");
     fprintf(cg->out, "  mov %%rax, %%rdi\n");
     fprintf(cg->out, "  and $0xff, %%edi\n");
@@ -899,7 +898,6 @@ int codegen_emit(CodeGen* cg) {
     nuru_emit_io_helpers(cg->out);
 
     nuru_emit_rt_helpers(cg->out);
-    nuru_emit_gc_collector(cg->out);
     nuru_emit_gc_data(cg->out);
     
     return 0;
