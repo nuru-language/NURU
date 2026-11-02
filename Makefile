@@ -9,7 +9,7 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
 
 TARGET = nuruc
 
-.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare
+.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare test-cli
 
 all: $(TARGET)
 
@@ -24,7 +24,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare
+test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare test-cli
 
 test-native: $(TARGET)
 	@echo "Running native execution tests..."
@@ -55,3 +55,7 @@ test-nir-opt: $(TARGET)
 test-opt-compare: $(TARGET)
 	@echo "Running optimized vs unoptimized behavioral comparison..."
 	./tests/native/run_opt_compare.sh
+
+test-cli: $(TARGET)
+	@echo "Running CLI integration tests..."
+	./tests/integration/run_cli_tests.sh
