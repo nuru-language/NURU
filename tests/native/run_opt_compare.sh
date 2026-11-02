@@ -23,7 +23,7 @@ for case_dir in "$TESTS_DIR"/cases/*/; do
     o=$(mktemp)
     so=$(mktemp)
     se=$(mktemp)
-    $o=$(mktemp)
+    oo=$(mktemp)
     oe=$(mktemp)
 
     if ! "$NURUC" -o "$o.bin" "$src" >"$se" 2>&1; then
