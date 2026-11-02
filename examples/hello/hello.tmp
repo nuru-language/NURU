@@ -55,6 +55,8 @@ _err_jmp:
   .quad 0
 _err_value:
   .quad 0
+_err_line:
+  .quad 0
 _lit_lo:
 _str0:
   .quad 0
@@ -219,6 +221,7 @@ _checked_div:
   shl $8, %rdi
   or $4, %rdi
   mov $1, %rsi
+  mov _err_line(%rip), %rdx
   call _mk_error
   mov %rax, _err_value(%rip)
   mov _err_jmp(%rip), %rdx
@@ -257,6 +260,7 @@ _checked_mod:
   shl $8, %rdi
   or $4, %rdi
   mov $1, %rsi
+  mov _err_line(%rip), %rdx
   call _mk_error
   mov %rax, _err_value(%rip)
   mov _err_jmp(%rip), %rdx
@@ -1187,17 +1191,25 @@ _mk_error:
   push %rbx
   push %r12
   push %r13
+  push %r14
   mov %rdi, %r12
   mov %rsi, %r13
-  mov $24, %rdi
+  mov %rdx, %r14
+  shl $8, %r13
+  or $2, %r13
+  shl $8, %r14
+  or $2, %r14
+  mov $32, %rdi
   call _alloc
   mov %rax, %rbx
   movq $1, (%rbx)
   mov %r12, 8(%rbx)
   mov %r13, 16(%rbx)
+  mov %r14, 24(%rbx)
   mov %rbx, %rax
   shl $8, %rax
   or $7, %rax
+  pop %r14
   pop %r13
   pop %r12
   pop %rbx
@@ -1209,6 +1221,7 @@ _raise_overflow:
   shl $8, %rdi
   or $4, %rdi
   mov $2, %rsi
+  mov _err_line(%rip), %rdx
   call _mk_error
   mov %rax, _err_value(%rip)
   mov _err_jmp(%rip), %rdx

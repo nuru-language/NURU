@@ -270,6 +270,7 @@ static void emit_expr(IRGen* irgen, ASTNode* node) {
 
 static void emit_stmt(IRGen* irgen, ASTNode* node) {
     if (!node) return;
+    irgen->current_line = node->line;
     
     switch (node->type) {
         case AST_DECLARATION:
