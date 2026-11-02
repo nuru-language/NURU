@@ -135,8 +135,12 @@ The `nuru` command-line tool wraps the compiler:
 
 ```
 nuru version | new NAME | build [-o OUT] FILE|DIR | run FILE|DIR
-nuru check FILE|DIR | test [DIR] | clean | help
+nuru check FILE|DIR | test [DIR] | lock [DIR] | clean | help
 ```
+
+`nuru lock [DIR]` writes a `nuru.lock` manifest of the resolved module graph
+(with per-module SHA-256 hashes); `nuru lock --check [DIR]` verifies the
+current resolution matches it, making builds reproducible.
 
 Projects are scaffolded with `nuru new NAME` (`src/main.nuru`, `nuru.toml`,
 `tests/`). `nuru build <dir>` reads `nuru.toml` for the project name (→

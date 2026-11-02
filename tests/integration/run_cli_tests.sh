@@ -68,6 +68,23 @@ else
     echo "FAIL  cli_module_path"; fail=$((fail+1))
 fi
 
+# lock (write + in-sync check)
+if ./nuru lock "$d" >/dev/null 2>&1 &&
+   [[ -s "$d/nuru.lock" ]] &&
+   ./nuru lock --check "$d" >/dev/null 2>&1; then
+    echo "PASS  cli_lock"; pass=$((pass+1))
+else
+    echo "FAIL  cli_lock"; fail=$((fail+1))
+fi
+
+# lock drift detection (mutate module -> check must fail)
+printf 'create greet using n {\n give "changed"\n}\n' > "$d/lib/greet.nuru"
+if ./nuru lock --check "$d" >/dev/null 2>&1; then
+    echo "FAIL  cli_lock_drift"; fail=$((fail+1))
+else
+    echo "PASS  cli_lock_drift"; pass=$((pass+1))
+fi
+
 # test subcommand
 printf 'create main {\n show 42\n}\n' > "$d/tests/ok.nuru"
 printf '42\n' > "$d/tests/ok.expected"

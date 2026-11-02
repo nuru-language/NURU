@@ -70,7 +70,7 @@ bring greet       # resolved via manifest module_path, see below
 `nuru` CLI:
 ```
 nuru version | new NAME | build [-o OUT] FILE|DIR | run FILE|DIR
-nuru check FILE|DIR | test [DIR] | clean | help
+nuru check FILE|DIR | test [DIR] | lock [DIR] | clean | help
 ```
 
 - `new NAME` scaffolds `src/main.nuru`, `tests/`, `examples/`, `nuru.toml`,

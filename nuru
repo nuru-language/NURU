@@ -27,6 +27,7 @@ Commands:
   run FILE             Compile FILE and run it
   check FILE           Compile FILE without emitting an executable
   test [DIR]           Compile and run tests/*.nuru (compare *.expected if present)
+  lock [DIR]           Write nuru.lock (resolved module graph); --check verifies
   clean                Remove build artifacts
   help                 Show this help
 
@@ -112,6 +113,36 @@ EOF
 A Nuru project.
 EOF
         echo "created project '$name'"
+        ;;
+    lock)
+        check=0
+        proj="${1:-.}"
+        if [[ "${1:-}" == "--check" ]]; then check=1; proj="${2:-.}"; fi
+        src="$(resolve_src "$proj")"
+        [[ -n "$src" ]] || { echo "lock: no src/main.nuru in '$proj'" >&2; exit 1; }
+        mapfile -t stdargs < <(stdlib_args_for "$proj")
+        mapfile -t cur_lines < <("$NURUC" "${stdargs[@]}" --print-imports "$src" 2>/dev/null) || {
+            echo "lock: import resolution failed" >&2; exit 1; }
+        lockfile="$proj/nuru.lock"
+        tmp="$(mktemp)"
+        for p in "${cur_lines[@]}"; do
+            h="$(sha256sum "$p" 2>/dev/null | awk '{print $1}')"
+            [[ -n "$h" ]] || continue
+            printf '%s %s\n' "$p" "$h" >> "$tmp"
+        done
+        if [[ "$check" -eq 1 ]]; then
+            if [[ -f "$lockfile" ]] && cmp -s "$tmp" "$lockfile"; then
+                rm -f "$tmp"
+                echo "locked (in sync)"
+            else
+                rm -f "$tmp"
+                echo "lockfile out of date" >&2
+                exit 1
+            fi
+        else
+            mv "$tmp" "$lockfile"
+            echo "wrote $lockfile"
+        fi
         ;;
     test)
         proj="${1:-.}"
