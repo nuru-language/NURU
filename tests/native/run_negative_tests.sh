@@ -41,6 +41,16 @@ check_rejects "float_literal_rejected" \
 ' \
     "floating-point"
 
+# A `bring` of a nonexistent module must be a clear compile-time error.
+check_rejects "bring_module_missing" \
+    'bring does_not_exist
+
+create main {
+    show 1
+}
+' \
+    "module 'does_not_exist' not found"
+
 echo
 echo "negative tests: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
