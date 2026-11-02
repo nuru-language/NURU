@@ -25,3 +25,6 @@ bring core
 |--------|----------|
 | `core` | `triple(x)` |
 | `math` | `square(x)`, `cube(x)`, `clamp(x, lo, hi)` |
+| `text` | `str_eq(a,b)`, `starts_with(s,prefix)`, `ends_with(s,suffix)` |
+| `collections` | `sum(lst)`, `list_has(lst, v)` |
+| `geo` | `distance_sq(x,y)` (imports `math`) |

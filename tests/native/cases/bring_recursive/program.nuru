@@ -1,0 +1,8 @@
+bring geo
+bring geo
+bring math
+
+create main {
+    show distance_sq with 3, 4
+    show square with 6
+}
