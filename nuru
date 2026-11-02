@@ -26,6 +26,7 @@ Commands:
   build [-o OUT] FILE  Compile FILE into an executable (default: ./<base>)
   run FILE             Compile FILE and run it
   check FILE           Compile FILE without emitting an executable
+  test [DIR]           Compile and run tests/*.nuru (compare *.expected if present)
   clean                Remove build artifacts
   help                 Show this help
 
@@ -81,6 +82,41 @@ EOF
 A Nuru project.
 EOF
         echo "created project '$name'"
+        ;;
+    test)
+        proj="${1:-.}"
+        srcdir="$proj/tests"
+        if [[ ! -d "$srcdir" ]]; then
+            echo "test: no tests/ directory in '$proj'" >&2
+            exit 1
+        fi
+        tpass=0; tfail=0
+        for t in "$srcdir"/*.nuru; do
+            [[ -e "$t" ]] || continue
+            base="$(basename "$t" .nuru)"
+            tmp="$(mktemp)"
+            if "$NURUC" -o "$tmp" "$t" >/dev/null 2>"$tmp.err"; then
+                out="$("$tmp" 2>&1)"; status=$?
+                ok=1
+                if [[ -f "$srcdir/$base.expected" ]]; then
+                    want="$(cat "$srcdir/$base.expected")"
+                    if [[ "$out" != "$want" ]]; then ok=0; fi
+                fi
+                if [[ "$status" -ne 0 ]]; then ok=0; fi
+                if [[ $ok -eq 1 ]]; then
+                    echo "PASS  $base"; tpass=$((tpass+1))
+                else
+                    echo "FAIL  $base (exit $status, output: $(printf '%s' "$out" | head -c 120))"
+                    tfail=$((tfail+1))
+                fi
+            else
+                echo "FAIL  $base (compile failed: $(head -1 "$tmp.err"))"
+                tfail=$((tfail+1))
+            fi
+            rm -f "$tmp" "$tmp.tmp" "$tmp.o" "$tmp.err"
+        done
+        echo "test: $tpass passed, $tfail failed"
+        [[ "$tfail" -eq 0 ]]
         ;;
     clean)
         rm -rf "$ROOT/build" "$ROOT/nuruc"

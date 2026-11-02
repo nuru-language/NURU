@@ -52,6 +52,16 @@ if ./nuru new "$d" >/dev/null 2>&1 &&
 else
     echo "FAIL  cli_new_dir"; fail=$((fail+1))
 fi
+
+# test subcommand
+printf 'create main {\n show 42\n}\n' > "$d/tests/ok.nuru"
+printf '42\n' > "$d/tests/ok.expected"
+if ./nuru test "$d" >/dev/null 2>&1 &&
+   [[ "$(./nuru test "$d" 2>/dev/null | tail -1)" == "test: 1 passed, 0 failed" ]]; then
+    echo "PASS  cli_test"; pass=$((pass+1))
+else
+    echo "FAIL  cli_test"; fail=$((fail+1))
+fi
 rm -rf "$d"
 
 echo
