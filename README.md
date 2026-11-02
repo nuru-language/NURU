@@ -124,9 +124,34 @@ The generated programs are self-contained and use only Linux system calls (`writ
 - Values are 64-bit words with an **8-bit type tag in the low byte** and a 56-bit payload (bits 8-63). Integers and booleans carry their value in the payload; strings, lists, and maps carry a pointer.
 - Heap objects share a uniform header: `[ref_count][length/count][payload]`. String literals live in `.data` with the same layout and are exempt from reference counting via a literal-region range check.
 - Memory is managed by **reference counting** (`_incref`/`_decref`) over a bump+free-list allocator: when an object's count reaches zero it is returned to the free list and its children are released recursively.
-- `show` dispatches on the tag byte through `_print_value`; divide-by-zero raises a catchable error for `attempt`/`recover`.
+- `show` dispatches on the tag byte through `_print_value`; divide-by-zero and integer overflow raise catchable errors for `attempt`/`recover`, and `recover` receives a real Error value with `.message` (printing an error shows its message).
+- Integers are signed 56-bit; out-of-range literals are compile-time errors and arithmetic overflow is a runtime error.
 
 This implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md`.
+
+## CLI and modules
+
+The `nuru` command-line tool wraps the compiler:
+
+```
+nuru version | new NAME | build [-o OUT] FILE|DIR | run FILE|DIR
+nuru check FILE|DIR | test [DIR] | clean | help
+```
+
+Projects are scaffolded with `nuru new NAME` (`src/main.nuru`, `nuru.toml`,
+`tests/`). `nuru build <dir>` reads `nuru.toml` for the project name (→
+`build/<name>`) and optional `module_path` (module search directory).
+
+Modules are imported with `bring`:
+
+```nuru
+bring math
+```
+
+Search order is `stdlib/<name>.nuru`, then `./<name>.nuru`; imports are
+include-once and recursive. A small standard library lives in `stdlib/`
+(`core`, `math`, `text`, `collections`, `geo`, `files`). See
+`stdlib/README.md` and `docs/STATUS.md`.
 
 ## Testing
 
@@ -157,7 +182,7 @@ Run with `make test` (or `make test-native`). The harness compiles each program,
 
 All documented language features are implemented and covered by native tests: functions, control flow (`when/otherwise`, `repeat`, `while`, `for each`, `stop`/`skip`, `attempt`/`recover`), arithmetic/comparison, mutable state, string interpolation, escapes, lists, maps, member access, append, `ask` (stdin), and the `len` built-in. The full pipeline — lexer through optimizer, codegen, and object/link stages — is wired end-to-end.
 
-Built-in functions: `show`, `ask` (read a line from stdin), `read_file(path)` (read an entire file as a string, "" on error), `write_file(path, content)` (write exact bytes, returns 0 on success / -1 on error), `len` (string/list/map length), `abs`, `min`, `max`, `pow` (integer exponentiation), `to_number` (parse a string to an integer), `to_string` (integer → decimal string, handles negatives), `reverse(s)` (reversed string), `concat` (concatenate two strings), `substring(s, start, end)` (slice a string, with bounds clamping), `upper` (uppercase copy), `lower` (lowercase copy), `contains(s, sub)` (does `s` contain `sub` — returns 0/1), `index(s, sub)` (first position of `sub` in `s`, or -1), `ord` (first char code of a string), `chr` (integer → one-character string). String comparison (`is` / `is not`) works via literal interning (identical string constants share one descriptor).
+Built-in functions: `show`, `ask` (read a line from stdin), `read_file(path)` (read an entire file as a string, "" on error), `write_file(path, content)` (write exact bytes), `len` (string/list/map length), `abs`, `min`, `max`, `pow` (integer exponentiation), `to_number` (parse a string to an integer), `to_string` (integer → decimal string, handles negatives), `reverse` (reversed string or list), `remove(list, value)` (new list without the first match), `concat` (concatenate two strings), `substring(s, start, end)` (slice a string, with bounds clamping), `upper` (uppercase copy), `lower` (lowercase copy), `contains(s, sub)` (does `s` contain `sub` — returns 0/1), `index(s, sub)` (first position of `sub` in `s`, or -1), `ord` (first char code of a string), `chr` (integer → one-character string). Ordinal string equality is available via `stdlib/text.nuru` (`str_eq`, `starts_with`, `ends_with`).
 
 The runtime implements the full tagged-value and reference-counting model of `docs/language/runtime-memory-spec-v0.1.md` plus catchable divide-by-zero.
 
