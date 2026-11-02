@@ -198,10 +198,12 @@ EOF
         ;;
     check)
         [[ $# -eq 1 ]] || { echo "check: expected one source file" >&2; exit 1; }
-        src="$(resolve_src "$1")"
-        [[ -n "$src" ]] || { echo "check: no src/main.nuru in '$1'" >&2; exit 1; }
+        orig="$1"
+        src="$(resolve_src "$orig")"
+        [[ -n "$src" ]] || { echo "check: no src/main.nuru in '$orig'" >&2; exit 1; }
         tmp="$(mktemp)"
-        if "$NURUC" -o "$tmp" "$src"; then
+        mapfile -t stdargs < <(stdlib_args_for "$orig")
+        if "$NURUC" "${stdargs[@]}" -o "$tmp" "$src"; then
             status=0
             echo "ok"
         else
