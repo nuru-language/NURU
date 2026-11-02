@@ -37,22 +37,96 @@ static int set_add(IncludeSet* s, const char* name) {
 /* If the line (len bytes, not newline-terminated) begins with `bring <name>`
  * (after optional whitespace, and followed only by whitespace or a comment),
  * set *start / *namelen to the name span and return 1. */
-static int match_bring(const char* line, size_t len, size_t* start, size_t* namelen) {
+/* Parse a `bring` directive. Two forms:
+ *   bring <module>
+ *   bring <name> from <module>
+ * On success sets *nstart/*nlen to the module identifier; if *selective is
+ * set, *fstart/*flen hold the selected function name. */
+static int parse_bring(const char* line, size_t len,
+                       size_t* nstart, size_t* nlen,
+                       int* selective, size_t* fstart, size_t* flen) {
     size_t i = 0;
     while (i < len && (line[i] == ' ' || line[i] == '\t')) i++;
     if (i + 5 > len || memcmp(line + i, "bring", 5) != 0) return 0;
     i += 5;
     if (i >= len || (line[i] != ' ' && line[i] != '\t')) return 0;
     while (i < len && (line[i] == ' ' || line[i] == '\t')) i++;
-    size_t ns = i;
+    size_t a = i;
     while (i < len && is_ident_char(line[i])) i++;
-    if (i == ns) return 0;
+    if (i == a) return 0;
+    size_t aend = i;
+
     size_t j = i;
     while (j < len && (line[j] == ' ' || line[j] == '\t')) j++;
-    if (j < len && line[j] != '#' && line[j] != '\n' && line[j] != '\r') return 0;
-    *start = ns;
-    *namelen = i - ns;
+    if (j + 4 <= len && memcmp(line + j, "from", 4) == 0) {
+        size_t k = j + 4;
+        while (k < len && (line[k] == ' ' || line[k] == '\t')) k++;
+        size_t m = k;
+        while (k < len && is_ident_char(line[k])) k++;
+        if (k != m) {
+            size_t q = k;
+            while (q < len && (line[q] == ' ' || line[q] == '\t')) q++;
+            if (q >= len || line[q] == '#' || line[q] == '\n' || line[q] == '\r') {
+                *selective = 1;
+                *fstart = a;
+                *flen = aend - a;
+                *nstart = m;
+                *nlen = k - m;
+                return 1;
+            }
+        }
+    }
+
+    size_t q = aend;
+    while (q < len && (line[q] == ' ' || line[q] == '\t')) q++;
+    if (q < len && line[q] != '#' && line[q] != '\n' && line[q] != '\r') return 0;
+    *selective = 0;
+    *nstart = a;
+    *nlen = aend - a;
     return 1;
+}
+
+/* Copy the top-level definition of function `fname` from `src` to `out`. */
+static void emit_function_block(FILE* out, const char* src, size_t len,
+                                const char* fname, size_t fnamelen) {
+    size_t start = 0;
+    int in_fn = 0;
+    int depth = 0;
+    int opened = 0;
+    while (start <= len) {
+        size_t end = start;
+        while (end < len && src[end] != '\n') end++;
+        size_t linelen = end - start;
+        size_t l = linelen;
+        if (l > 0 && src[end - 1] == '\r') l--;
+
+        if (!in_fn) {
+            size_t p = 0;
+            while (p < l && (src[start + p] == ' ' || src[start + p] == '\t')) p++;
+            if (p + 6 <= l && memcmp(src + start + p, "create", 6) == 0) {
+                size_t q = p + 6;
+                while (q < l && (src[start + q] == ' ' || src[start + q] == '\t')) q++;
+                if (q + fnamelen <= l &&
+                    memcmp(src + start + q, fname, fnamelen) == 0 &&
+                    (q + fnamelen >= l || !is_ident_char(src[start + q + fnamelen]))) {
+                    in_fn = 1;
+                }
+            }
+        }
+
+        if (in_fn) {
+            fwrite(src + start, 1, l, out);
+            if (end < len) fputc('\n', out);
+            for (size_t z = 0; z < l; z++) {
+                if (src[start + z] == '{') { depth++; opened = 1; }
+                else if (src[start + z] == '}') { if (depth > 0) depth--; }
+            }
+            if (opened && depth == 0) return;
+        }
+
+        if (end < len) start = end + 1;
+        else break;
+    }
 }
 
 static int read_file(const char* path, char** out, size_t* outlen) {
@@ -88,6 +162,26 @@ static int resolve_module(const char* name, size_t namelen,
     FILE* t = fopen(outpath, "rb");
     if (t) { fclose(t); return 1; }
     return 0;
+}
+
+/* Selectively import one function definition from `path` (include-once). */
+static int emit_selected(const char* path, IncludeSet* included, FILE* out,
+                         const char* fname, size_t flen,
+                         char* errbuf, size_t errcap) {
+    if (set_has(included, path)) return 1;
+    if (!set_add(included, path)) {
+        snprintf(errbuf, errcap, "out of memory while resolving imports");
+        return 0;
+    }
+    char* src = NULL;
+    size_t len = 0;
+    if (!read_file(path, &src, &len)) {
+        snprintf(errbuf, errcap, "cannot read module file '%s'", path);
+        return 0;
+    }
+    emit_function_block(out, src, len, fname, flen);
+    free(src);
+    return 1;
 }
 
 static int expand_file(const char* path, IncludeSet* included, FILE* out,
