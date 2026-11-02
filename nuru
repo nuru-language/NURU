@@ -56,6 +56,27 @@ manifest_name() {
         | sed -E 's/^[[:space:]]*name[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/'
 }
 
+manifest_module_path() {
+    local mf="$1"
+    [[ -f "$mf" ]] || return 1
+    sed -n '/^\[project\]/,/^\[/p' "$mf" \
+        | grep -E '^[[:space:]]*module_path[[:space:]]*=' \
+        | head -1 \
+        | sed -E 's/^[[:space:]]*module_path[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/'
+}
+
+# Print "--stdlib <dir>" arguments for a project directory (if it declares a
+# module_path). Caller should capture into an array.
+stdlib_args_for() {
+    local dir="$1"
+    local mp
+    mp="$(manifest_module_path "$dir/nuru.toml")"
+    if [[ -n "$mp" ]]; then
+        echo "--stdlib"
+        echo "$dir/$mp"
+    fi
+}
+
 [[ $# -ge 1 ]] || { usage; exit 1; }
 cmd="$1"; shift
 

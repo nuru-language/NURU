@@ -38,6 +38,7 @@ static void print_help(const char* program) {
     printf("  -i, --ir        Show IR\n");
     printf("  -o <file>       Output file\n");
     printf("  -O0             Disable NIR optimization (default: on)\n");
+    printf("  -S, --stdlib DIR  Module search directory (default: stdlib)\n");
     printf("  -h, --help      Show this help\n");
 }
 
