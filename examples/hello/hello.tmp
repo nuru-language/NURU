@@ -193,8 +193,26 @@ _write_string:
 _checked_div:
   test %rcx, %rcx
   jz .cd_zero
+  mov %rax, %r8
+  sar $63, %r8
+  mov %rcx, %r9
+  sar $63, %r9
+  xor %r9, %r8
+  mov %rax, %r10
+  neg %r10
+  test %rax, %rax
+  cmovs %r10, %rax
+  mov %rcx, %r11
+  neg %r11
+  test %rcx, %rcx
+  cmovs %r11, %rcx
   xor %rdx, %rdx
-  idiv %rcx
+  div %rcx
+  test %r8, %r8
+  js .cd_neg
+  ret
+.cd_neg:
+  neg %rax
   ret
 .cd_zero:
   lea _str_err_divzero(%rip), %rdi
@@ -215,9 +233,24 @@ _checked_div:
 _checked_mod:
   test %rcx, %rcx
   jz .cm_zero
+  mov %rax, %r8
+  sar $63, %r8
+  mov %rax, %r10
+  neg %r10
+  test %rax, %rax
+  cmovs %r10, %rax
+  mov %rcx, %r11
+  neg %r11
+  test %rcx, %rcx
+  cmovs %r11, %rcx
   xor %rdx, %rdx
-  idiv %rcx
+  div %rcx
   mov %rdx, %rax
+  test %r8, %r8
+  js .cm_neg
+  ret
+.cm_neg:
+  neg %rax
   ret
 .cm_zero:
   lea _str_err_divzero(%rip), %rdi

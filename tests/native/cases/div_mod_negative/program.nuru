@@ -1,0 +1,10 @@
+create main {
+    show 7 divided by 2
+    show -7 divided by 2
+    show 7 divided by -2
+    show -7 divided by -2
+    show 7 remainder of 2
+    show -7 remainder of 2
+    show 7 remainder of -2
+    show -7 remainder of -2
+}
