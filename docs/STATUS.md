@@ -90,13 +90,18 @@ nuru check FILE|DIR | test [DIR] | lock [DIR] | doctor | clean | help
 
 - **Phase 9 — complete.** `nuru.lock` (SHA-256 per module) with `nuru lock`
   / `lock --check`, and `--locked` gating on build/run/check.
-- **Phase 5 — nearly complete.** All runtime helper emissions now live behind
+- **Phase 5 — mostly complete.** All runtime helper emissions now live behind
   `runtime/emit_runtime.h` / `runtime/platform/linux/emit_runtime.c` (verified
-  byte-identical against the pre-extraction build). Mark-and-sweep GC:
-  algorithm implemented and tested as a host-side collector
+  byte-identical against the pre-extraction build). Mark-and-sweep GC: the
+  algorithm is implemented and tested as a host-side collector
   (`tests/nir/test_gc.c`, covering reachability, cycle reclamation, and
-  reachable-cycle preservation) per `runtime/GC.md`; integration into the
-  emitted assembly runtime remains.
+  reachable-cycle preservation) per `runtime/GC.md`. Runtime integration was
+  prototyped but reverted: conservative stack-root scanning is not yet
+  trustworthy enough to auto-trigger on heap exhaustion, and today's value
+  semantics cannot construct cyclic/unreachable-retained garbage to exercise it
+  meaningfully. Integration remains documented future work. Noted heap ceiling:
+  the runtime's 1 MiB arena limits large O(n²) `add`-built lists (~400
+  elements).
 - **Phase 8 — in progress.** Module visibility: selective imports
   (`bring <name> from <module>`) implemented; un-imported module symbols are
   not visible. Namespace-qualified references (e.g. `m.f`) remain future work.
