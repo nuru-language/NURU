@@ -459,7 +459,7 @@ static void analyze_node(SemanticAnalyzer* analyzer, ASTNode* node) {
         case AST_INTEGER_LITERAL:
             {
                 int64_t v = node->integer_literal.value;
-                if (v < -((int64_t)1 << 55) || v > ((int64_t)1 << 55) - 1) {
+                if (v > ((int64_t)1 << 55)) {
                     semantic_error(analyzer,
                         "Integer literal out of supported range (|value| must be <= 2^55)",
                         node->line, node->column);

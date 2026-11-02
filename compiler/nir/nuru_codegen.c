@@ -2046,7 +2046,8 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  movabs $0x0080000000000000, %%rdx\n");
     fprintf(cg->out, "  add %%rdx, %%rcx\n");
     fprintf(cg->out, "  js .ci_fail\n");
-    fprintf(cg->out, "  cmp $0x0100000000000000, %%rcx\n");
+    fprintf(cg->out, "  movabs $0x0100000000000000, %%rdx\n");
+    fprintf(cg->out, "  cmp %%rdx, %%rcx\n");
     fprintf(cg->out, "  jae .ci_fail\n");
     fprintf(cg->out, "  ret\n");
     fprintf(cg->out, ".ci_fail:\n");
