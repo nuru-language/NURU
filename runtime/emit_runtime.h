@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+struct NIRProgram;
+
 /*
  * Runtime-emission interface. These functions write the runtime's embedded
  * assembly/data into the generated source file. They are the extraction target
