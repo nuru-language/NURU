@@ -386,7 +386,13 @@ static void analyze_node(SemanticAnalyzer* analyzer, ASTNode* node) {
     switch (node->type) {
         case AST_PROGRAM:
             for (size_t i = 0; i < node->program.statement_count; i++) {
-                analyze_node(analyzer, node->program.statements[i]);
+                ASTNode* s = node->program.statements[i];
+                if (s->type != AST_FUNCTION_DECL) {
+                    semantic_error(analyzer,
+                        "top-level statements are not allowed; put executable code inside 'create main'",
+                        s->line, s->column);
+                }
+                analyze_node(analyzer, s);
             }
             break;
 
