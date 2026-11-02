@@ -1,0 +1,8 @@
+create main {
+    attempt {
+        make x be 10 divided by 0
+    }
+    recover e {
+        show e
+    }
+}

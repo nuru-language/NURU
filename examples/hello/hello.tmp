@@ -130,9 +130,15 @@ _print_value_raw:
   je .raw_bool
   cmp $4, %rdx
   je .raw_str
+  cmp $7, %rdx
+  je .raw_err
   cmp $0, %rdx
   je .raw_empty
   jmp .raw_int
+.raw_err:
+  shr $8, %rax
+  mov 8(%rax), %rax
+  jmp .raw_str
 .raw_int:
   sar $8, %rax
   mov %rax, %rdi
