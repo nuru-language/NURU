@@ -256,6 +256,15 @@ int main(int argc, char** argv) {
     sprintf(tmpasm, "%s.tmp", outfile);
 
     CodeGen* cg = codegen_create(tmpasm, ir);
+    if (!cg) {
+        fprintf(stderr, "Error: cannot create assembly file '%s'\n", tmpasm);
+        free(outfile);
+        free(asmfile);
+        free(objfile);
+        free(tmpasm);
+        irgen_free(irgen);
+        return 1;
+    }
     codegen_emit(cg);
     codegen_free(cg);
 
