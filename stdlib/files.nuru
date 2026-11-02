@@ -1,0 +1,7 @@
+create read_text using path {
+    give read_file with path
+}
+
+create write_text using path, contents {
+    give write_file with path, contents
+}

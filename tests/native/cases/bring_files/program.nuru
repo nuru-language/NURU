@@ -1,0 +1,7 @@
+bring files
+
+create main {
+    make p be "/tmp/nuru_files_test.txt"
+    make w be write_text with p, "hello file"
+    show read_text with p
+}
