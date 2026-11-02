@@ -85,6 +85,22 @@ else
     echo "PASS  cli_lock_drift"; pass=$((pass+1))
 fi
 
+# --locked build (in sync -> ok; drift -> fail)
+printf 'create greet using n {\n give concat with "hi ", n\n}\n' > "$d/lib/greet.nuru"
+./nuru lock "$d" >/dev/null 2>&1
+if ./nuru build --locked -o "$d/app" "$d" >/dev/null 2>&1 &&
+   [[ "$("$d/app")" == "hi x" ]]; then
+    echo "PASS  cli_locked_build"; pass=$((pass+1))
+else
+    echo "FAIL  cli_locked_build"; fail=$((fail+1))
+fi
+printf 'create greet using n {\n give "changed"\n}\n' > "$d/lib/greet.nuru"
+if ./nuru build --locked -o "$d/app" "$d" >/dev/null 2>&1; then
+    echo "FAIL  cli_locked_build_drift"; fail=$((fail+1))
+else
+    echo "PASS  cli_locked_build_drift"; pass=$((pass+1))
+fi
+
 # test subcommand
 printf 'create main {\n show 42\n}\n' > "$d/tests/ok.nuru"
 printf '42\n' > "$d/tests/ok.expected"
