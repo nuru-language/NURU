@@ -57,6 +57,22 @@ check_rejects "toplevel_statement_rejected" \
 ' \
     "top-level statements are not allowed"
 
+# A duplicate top-level function definition must be a clear error.
+check_rejects "duplicate_function_rejected" \
+    'create f using x {
+    give x
+}
+
+create f using y {
+    give y
+}
+
+create main {
+    show f with 1
+}
+' \
+    "function 'f' is already defined"
+
 # An unwritable output path must be a graceful, nonzero error, not a segfault.
 srcfile="$(mktemp)"
 log="$(mktemp)"
