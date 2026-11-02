@@ -1,0 +1,11 @@
+create main {
+    make a be [1, 2, 3]
+    make b be reverse with a
+    show len with a
+    show a[0]
+    show b[0]
+    make c be remove with a, 2
+    show len with c
+    show len with a
+    show a[1]
+}
