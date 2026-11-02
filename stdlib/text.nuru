@@ -1,0 +1,41 @@
+create str_eq using a, b {
+    make la be len with a
+    make lb be len with b
+    when la is not lb {
+        give 0
+    }
+    make i changeable 0
+    while i is below la {
+        make ca be ord with substring with a, i, i plus 1
+        make cb be ord with substring with b, i, i plus 1
+        when ca is not cb {
+            give 0
+        }
+        change i to i plus 1
+    }
+    give 1
+}
+
+create starts_with using s, prefix {
+    make lp be len with prefix
+    when lp is 0 {
+        give 1
+    }
+    make ls be len with s
+    when ls is below lp {
+        give 0
+    }
+    give str_eq with (substring with s, 0, lp), prefix
+}
+
+create ends_with using s, suffix {
+    make l2 be len with suffix
+    when l2 is 0 {
+        give 1
+    }
+    make ls be len with s
+    when ls is below l2 {
+        give 0
+    }
+    give str_eq with (substring with s, ls minus l2, ls), suffix
+}

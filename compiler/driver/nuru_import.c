@@ -139,6 +139,9 @@ static int expand_file(const char* path, IncludeSet* included, FILE* out,
         else break;
     }
 
+    /* guarantee the included content ends on its own line */
+    if (len > 0 && src[len - 1] != '\n') fputc('\n', out);
+
     free(src);
     return ok;
 }
@@ -188,6 +191,9 @@ char* nuru_expand_imports(const char* src, size_t len, size_t* out_len,
         if (end < len) start = end + 1;
         else break;
     }
+
+    /* newline-terminate the expanded output if the root source lacked one */
+    if (len > 0 && src[len - 1] != '\n') fputc('\n', out);
 
     fclose(out);
 

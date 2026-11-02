@@ -1,0 +1,5 @@
+bring math
+
+create distance_sq using x, y {
+    give (square with x) plus (square with y)
+}

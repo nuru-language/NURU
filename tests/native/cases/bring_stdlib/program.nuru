@@ -1,0 +1,12 @@
+bring text
+bring collections
+
+create main {
+    show starts_with with "hello world", "hello"
+    show starts_with with "hello world", "world"
+    show ends_with with "hello world", "world"
+    show str_eq with "abc", "abc"
+    show sum with [1, 2, 3, 4]
+    show list_has with [5, 6, 7], 6
+    show list_has with [5, 6, 7], 9
+}

@@ -1,0 +1,16 @@
+create sum using lst {
+    make acc changeable 0
+    for each x in lst {
+        change acc to acc plus x
+    }
+    give acc
+}
+
+create list_has using lst, v {
+    for each x in lst {
+        when x is v {
+            give 1
+        }
+    }
+    give 0
+}
