@@ -27,6 +27,8 @@ Options:
 | `-s, --semantic` | show semantic-analysis result / errors |
 | `-i, --ir` | dump the NIR intermediate representation (post-optimization) |
 | `-o <file>` | output executable path (default: input path without `.nuru`) |
+| `-O0` | disable NIR optimization (default: on) |
+| `-S, --stdlib DIR` | module search directory (default: `stdlib`) |
 | `-h, --help` | usage |
 
 Compilation runs the full pipeline and, unless `-i` is given, emits an executable at the output path.
