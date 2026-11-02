@@ -320,6 +320,7 @@ static void analyze_function_call(SemanticAnalyzer* analyzer, ASTNode* node) {
         { "substring", 3 }, { "upper", 1 }, { "lower", 1 }, { "index", 2 },
         { "to_string", 1 },
         { "reverse", 1 },
+        { "remove", 2 },
         { "read_file", 1 }, { "write_file", 2 },
     };
     for (size_t bi = 0; bi < sizeof(builtins)/sizeof(builtins[0]); bi++) {
