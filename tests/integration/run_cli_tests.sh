@@ -58,6 +58,7 @@ else
 fi
 
 # manifest module_path + local module
+mkdir -p "$d/lib"
 printf 'create greet using name {\n give concat with "Hello, ", name\n}\n' > "$d/lib/greet.nuru"
 printf 'module_path = "lib"\n' >> "$d/nuru.toml"
 printf 'bring greet\n\ncreate main {\n show greet with "Nuru"\n}\n' > "$d/src/main.nuru"
