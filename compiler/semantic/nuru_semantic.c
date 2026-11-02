@@ -385,14 +385,39 @@ static void analyze_node(SemanticAnalyzer* analyzer, ASTNode* node) {
 
     switch (node->type) {
         case AST_PROGRAM:
-            for (size_t i = 0; i < node->program.statement_count; i++) {
-                ASTNode* s = node->program.statements[i];
-                if (s->type != AST_FUNCTION_DECL) {
-                    semantic_error(analyzer,
-                        "top-level statements are not allowed; put executable code inside 'create main'",
-                        s->line, s->column);
+            {
+                char** seen = NULL;
+                size_t seen_count = 0, seen_cap = 0;
+                for (size_t i = 0; i < node->program.statement_count; i++) {
+                    ASTNode* s = node->program.statements[i];
+                    if (s->type != AST_FUNCTION_DECL) {
+                        semantic_error(analyzer,
+                            "top-level statements are not allowed; put executable code inside 'create main'",
+                            s->line, s->column);
+                    } else {
+                        int dup = 0;
+                        for (size_t k = 0; k < seen_count; k++) {
+                            if (strcmp(seen[k], s->function_decl.name) == 0) {
+                                dup = 1;
+                                break;
+                            }
+                        }
+                        if (dup) {
+                            char msg[128];
+                            snprintf(msg, sizeof(msg), "function '%s' is already defined",
+                                     s->function_decl.name);
+                            semantic_error(analyzer, msg, s->line, s->column);
+                        } else if (seen_count >= seen_cap) {
+                            seen_cap = seen_cap == 0 ? 4 : seen_cap * 2;
+                            seen = realloc(seen, sizeof(char*) * seen_cap);
+                            seen[seen_count++] = s->function_decl.name;
+                        } else {
+                            seen[seen_count++] = s->function_decl.name;
+                        }
+                    }
+                    analyze_node(analyzer, s);
                 }
-                analyze_node(analyzer, s);
+                free(seen);
             }
             break;
 
