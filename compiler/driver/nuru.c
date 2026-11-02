@@ -24,6 +24,7 @@ typedef struct {
     int show_help;
     int show_version;
     int disable_opt;
+    int print_imports;
     const char* input_file;
     const char* output_file;
     const char* stdlib_dir;
@@ -67,6 +68,8 @@ static int parse_args(CompilerOptions* opts, int argc, char** argv) {
             opts->disable_opt = 1;
         } else if ((strcmp(argv[i], "--stdlib") == 0 || strcmp(argv[i], "-S") == 0) && i + 1 < argc) {
             opts->stdlib_dir = argv[++i];
+        } else if (strcmp(argv[i], "--print-imports") == 0) {
+            opts->print_imports = 1;
         } else if (argv[i][0] != '-') {
             opts->input_file = argv[i];
         }
@@ -136,6 +139,25 @@ int main(int argc, char** argv) {
     char* source = read_file(opts.input_file, &source_size);
     if (!source) {
         return 1;
+    }
+
+    if (opts.print_imports) {
+        char errmsg[256];
+        char** paths = NULL;
+        size_t n = nuru_collect_imports(source, source_size, opts.stdlib_dir,
+                                        &paths, errmsg, sizeof(errmsg));
+        if (n == (size_t)-1) {
+            fprintf(stderr, "Import error: %s\n", errmsg);
+            free(source);
+            return 1;
+        }
+        for (size_t i = 0; i < n; i++) {
+            printf("%s\n", paths[i]);
+            free(paths[i]);
+        }
+        free(paths);
+        free(source);
+        return 0;
     }
 
     {
