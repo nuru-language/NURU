@@ -2,7 +2,6 @@
 
 .globl _start
 _start:
-  mov %rsp, _stack_low(%rip)
   call main
   mov %rax, %rdi
   and $0xff, %edi
@@ -1280,7 +1279,6 @@ _alloc:
   mov %rax, _gc_free(%rip)
 .af_use:
   movq $0, 16(%r9)
-  movq $0, _gc_attempted(%rip)
   lea 32(%r9), %rax
   ret
 .af_bump:
@@ -1288,13 +1286,8 @@ _alloc:
   lea (%r9,%r8), %r10
   cmp _gc_hi(%rip), %r10
   jbe .af_bumpok
-  cmpq $0, _gc_attempted(%rip)
-  jne .af_fail
-  movq $1, _gc_attempted(%rip)
-  call _gc_collect
-  jmp .af_loop
+  jmp .af_fail
 .af_bumpok:
-  movq $0, _gc_attempted(%rip)
   mov %r8, 8(%r9)
   mov %r10, _gc_top(%rip)
   lea 32(%r9), %rax
@@ -1433,123 +1426,6 @@ _decref:
 .dr_done:
   ret
 
-.globl mark_block
-mark_block:
-  sub $32, %rax
-  mov %rax, %rdx
-  mov 8(%rax), %rcx
-  btq $63, %rcx
-  jc .mb_done
-  btsq $63, %rcx
-  mov %rcx, 8(%rax)
-  mov _gc_qtail(%rip), %r8
-  cmp $16384, %r8
-  jae .mb_overflow
-  lea _gc_queue(%rip), %r9
-  mov %rdx, (%r9,%r8,8)
-  inc %r8
-  mov %r8, _gc_qtail(%rip)
-  ret
-.mb_overflow:
-  movq $1, _gc_overflow(%rip)
-.mb_done:
-  ret
-
-.globl _gc_collect
-_gc_collect:
-  push %rbx
-  push %r12
-  push %r13
-  push %r14
-  push %r15
-  movq $0, _gc_qhead(%rip)
-  movq $0, _gc_qtail(%rip)
-  movq $0, _gc_overflow(%rip)
-  lea 8(%rsp), %r12
-  mov _stack_low(%rip), %r14
-.cl_root:
-  cmp %r14, %r12
-  jae .cl_roots_done
-  mov (%r12), %r11
-  mov %r11, %rax
-  and $0xff, %eax
-  sub $4, %rax
-  cmp $4, %rax
-  jae .cl_next
-  mov %r11, %rax
-  shr $8, %rax
-  call mark_block
-.cl_next:
-  add $8, %r12
-  cmpq $0, _gc_overflow(%rip)
-  jne .cl_sweep
-  jmp .cl_root
-.cl_roots_done:
-.cl_loop:
-  mov _gc_qhead(%rip), %r15
-  mov _gc_qtail(%rip), %rax
-  cmp %rax, %r15
-  jae .cl_sweep
-  lea _gc_queue(%rip), %r13
-  mov (%r13,%r15,8), %rbx
-  inc %r15
-  mov %r15, _gc_qhead(%rip)
-  mov 8(%rbx), %r14
-  movabs $0x7fffffffffffffff, %rax
-  and %rax, %r14
-  lea 32(%rbx), %rcx
-  lea (%rbx,%r14), %r15
-.cl_inner:
-  cmp %r15, %rcx
-  jae .cl_loop
-  mov (%rcx), %r11
-  mov %r11, %rax
-  and $0xff, %eax
-  sub $4, %rax
-  cmp $4, %rax
-  jae .cl_inner_next
-  mov %r11, %rax
-  shr $8, %rax
-  call mark_block
-  cmpq $0, _gc_overflow(%rip)
-  jne .cl_sweep
-.cl_inner_next:
-  add $8, %rcx
-  jmp .cl_inner
-.cl_sweep:
-  mov _gc_heap(%rip), %rbx
-.cl_sweep_loop:
-  mov _gc_top(%rip), %rax
-  cmp %rax, %rbx
-  jae .cl_finish
-  mov 8(%rbx), %rcx
-  btq $63, %rcx
-  jnc .cl_sweep_notmarked
-  movabs $0x7fffffffffffffff, %rax
-  and %rax, %rcx
-  mov %rcx, 8(%rbx)
-  jmp .cl_sweep_advance
-.cl_sweep_notmarked:
-  movabs $0x7fffffffffffffff, %rax
-  and %rax, %rcx
-  mov %rcx, 8(%rbx)
-  cmpq $0, _gc_overflow(%rip)
-  jne .cl_sweep_advance
-  mov _gc_free(%rip), %rax
-  mov %rax, 24(%rbx)
-  mov %rbx, _gc_free(%rip)
-.cl_sweep_advance:
-  mov %rcx, %r14
-  add %r14, %rbx
-  jmp .cl_sweep_loop
-.cl_finish:
-  pop %r15
-  pop %r14
-  pop %r13
-  pop %r12
-  pop %rbx
-  ret
-
 .data
 .align 8
 _gc_heap:
@@ -1562,16 +1438,4 @@ _gc_lo:
   .quad _gc_heap
 _gc_hi:
   .quad _gc_heap + 1048576
-_gc_queue:
-  .zero 131072
-_gc_qhead:
-  .quad 0
-_gc_qtail:
-  .quad 0
-_gc_overflow:
-  .quad 0
-_gc_attempted:
-  .quad 0
-_stack_low:
-  .quad 0
 .text
