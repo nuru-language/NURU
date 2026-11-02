@@ -1,0 +1,57 @@
+Running native execution tests...
+./tests/native/run_native_tests.sh
+PASS  add
+PASS  arithmetic
+PASS  ask
+PASS  attempt_catch
+PASS  attempt_noerror
+PASS  builtins
+PASS  call_stmt
+PASS  chars
+PASS  codegen
+PASS  comparisons
+PASS  concat
+PASS  conditions
+PASS  contains
+PASS  div_mod
+PASS  else_branch
+PASS  empty_list
+PASS  escapes
+PASS  forward_ref
+PASS  gc_stress
+PASS  hello
+PASS  index
+PASS  indexing
+PASS  interpolation
+PASS  io
+PASS  len
+PASS  lexer
+PASS  list_for_each
+PASS  list_sum
+PASS  loop_break
+PASS  loop_continue
+PASS  map_field
+PASS  negatives
+PASS  nested_calls
+PASS  nested_if
+PASS  paren_grouping
+PASS  parser
+PASS  parser_attempt
+PASS  parser_cmp
+PASS  parser_control
+PASS  parser_fn
+PASS  parser_literals
+PASS  parser_loops
+PASS  parser_repeat
+PASS  parser_semantic
+PASS  parser_stmt
+PASS  pow
+PASS  repeat_loop
+PASS  reverse
+PASS  string_compare
+PASS  substring
+PASS  to_string
+PASS  upper
+PASS  while_loop
+
+native tests: 53 passed, 0 failed

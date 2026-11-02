@@ -1,0 +1,27 @@
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/ast/nuru_ast.o compiler/ast/nuru_ast.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/driver/nuru.o compiler/driver/nuru.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/lexer/nuru_lexer.o compiler/lexer/nuru_lexer.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/nir/nuru_codegen.o compiler/nir/nuru_codegen.c
+compiler/nir/nuru_codegen.c: In function ‘codegen_emit’:
+compiler/nir/nuru_codegen.c:1082:31: warning: unknown conversion type character ‘r’ in format [-Wformat=]
+ 1082 |     fprintf(cg->out, "  mov (%rsp), %%rax\n");
+      |                               ^
+compiler/nir/nuru_codegen.c:1546:31: warning: unknown conversion type character ‘r’ in format [-Wformat=]
+ 1546 |     fprintf(cg->out, "  mov (%rsp), %%rax\n");
+      |                               ^
+compiler/nir/nuru_codegen.c:1589:31: warning: unknown conversion type character ‘r’ in format [-Wformat=]
+ 1589 |     fprintf(cg->out, "  mov (%rsp), %%rax\n");
+      |                               ^
+compiler/nir/nuru_codegen.c:1619:32: warning: unknown conversion type character ‘r’ in format [-Wformat=]
+ 1619 |     fprintf(cg->out, "  mov 8(%rsp), %%rax\n");
+      |                                ^
+compiler/nir/nuru_codegen.c:1621:31: warning: unknown conversion type character ‘r’ in format [-Wformat=]
+ 1621 |     fprintf(cg->out, "  mov (%rsp), %%rax\n");
+      |                               ^
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/nir/nuru_irgen.o compiler/nir/nuru_irgen.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/nir/nuru_nir.o compiler/nir/nuru_nir.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/object/nuru_object.o compiler/object/nuru_object.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/optimizer/nuru_optimizer.o compiler/optimizer/nuru_optimizer.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/parser/nuru_parser.o compiler/parser/nuru_parser.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -c -o build/semantic/nuru_semantic.o compiler/semantic/nuru_semantic.c
+gcc -Wall -Wextra -std=c11 -O2 -g -Icompiler -o nuruc build/ast/nuru_ast.o build/driver/nuru.o build/lexer/nuru_lexer.o build/nir/nuru_codegen.o build/nir/nuru_irgen.o build/nir/nuru_nir.o build/object/nuru_object.o build/optimizer/nuru_optimizer.o build/parser/nuru_parser.o build/semantic/nuru_semantic.o 

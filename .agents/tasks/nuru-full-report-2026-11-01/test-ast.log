@@ -1,0 +1,6 @@
+Running AST tests...
+./nuruc -a examples/hello/hello.nuru
+
+=== AST ===
+FUNCTION_DECL (main)
+Compilation successful!
