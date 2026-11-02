@@ -22,4 +22,7 @@ void nuru_emit_literal_data(FILE* out, struct NIRProgram* program);
 void nuru_emit_io_helpers(FILE* out);
 void nuru_emit_rt_helpers(FILE* out);
 
+/* Emit the mark-and-sweep collector (mark_block, _gc_collect). */
+void nuru_emit_gc_collector(FILE* out);
+
 #endif /* NURU_EMIT_RUNTIME_H */
