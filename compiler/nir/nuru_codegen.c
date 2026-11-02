@@ -1839,7 +1839,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  call _incref\n");
     fprintf(cg->out, "  jmp .ig_finish\n");
     fprintf(cg->out, ".ig_zero:\n");
-    fprintf(cg->out, "  mov $0, %%rax\n");
+    fprintf(cg->out, "  mov $2, %%rax\n");
     fprintf(cg->out, ".ig_finish:\n");
     fprintf(cg->out, "  mov %%rax, %%r8\n");
     fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
