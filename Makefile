@@ -65,3 +65,8 @@ test-opt-compare: $(TARGET)
 test-cli: $(TARGET)
 	@echo "Running CLI integration tests..."
 	./tests/integration/run_cli_tests.sh
+
+test-gc:
+	@echo "Running mark-and-sweep GC tests..."
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/test_gc tests/nir/test_gc.c
+	./$(BUILD_DIR)/test_gc
