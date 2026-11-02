@@ -1,0 +1,17 @@
+create main {
+    attempt {
+        make a be 1 divided by 0
+    }
+    recover e {
+        show e.message
+        attempt {
+            make b be 2 divided by 0
+        }
+        recover f {
+            show f.message
+            show f.line
+        }
+        show 1
+    }
+    show 2
+}

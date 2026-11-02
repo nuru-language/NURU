@@ -11,7 +11,7 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(filter $(SRC_DIR)/%,$(S
 
 TARGET = nuruc
 
-.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc
+.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc test-pe
 
 all: $(TARGET)
 
@@ -30,7 +30,7 @@ $(BUILD_DIR)/runtime/%.o: runtime/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc
+test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc test-pe
 
 test-native: $(TARGET)
 	@echo "Running native execution tests..."
@@ -70,3 +70,8 @@ test-gc:
 	@echo "Running mark-and-sweep GC tests..."
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/test_gc tests/nir/test_gc.c
 	./$(BUILD_DIR)/test_gc
+
+test-pe:
+	@echo "Running PE/COFF container tests..."
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/test_pe tests/nir/test_pe.c $(BUILD_DIR)/object/nuru_pe.o
+	./$(BUILD_DIR)/test_pe

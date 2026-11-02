@@ -105,5 +105,8 @@ nuru check FILE|DIR | test [DIR] | lock [DIR] | doctor | clean | help
 - **Phase 8 — in progress.** Module visibility: selective imports
   (`bring <name> from <module>`) implemented; un-imported module symbols are
   not visible. Namespace-qualified references (e.g. `m.f`) remain future work.
-- **Phase 7**: Windows x86-64 PE backend (needs a Windows runner).
+- **Phase 7 — groundwork.** PE32+ image builder implemented and structurally
+  validated (`compiler/object/nuru_pe.{c,h}`, `tests/nir/test_pe.c`); see
+  `runtime/platform/windows/README.md`. Full codegen/execution needs a Windows
+  runner.
 - **Phase 10**: extend bootstrap codegen to full self-hosting.
