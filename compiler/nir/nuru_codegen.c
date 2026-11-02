@@ -1079,7 +1079,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  mov %%rdx, %%rbx\n");
     fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
     fprintf(cg->out, "  call _decref\n");
-    fprintf(cg->out, "  mov (%rsp), %%rax\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
     fprintf(cg->out, "  call _decref\n");
     fprintf(cg->out, "  add $16, %%rsp\n");
     fprintf(cg->out, "  mov %%rbx, %%rax\n");
@@ -1543,7 +1543,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  movq $1, (%%r12)\n");
     fprintf(cg->out, "  movq $0, 8(%%r12)\n");
     fprintf(cg->out, ".rf_mkval:\n");
-    fprintf(cg->out, "  mov (%rsp), %%rax\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
     fprintf(cg->out, "  call _decref\n");
     fprintf(cg->out, "  add $8, %%rsp\n");
     fprintf(cg->out, "  mov %%r12, %%rax\n");
@@ -1586,7 +1586,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  jmp .wf_cp\n");
     fprintf(cg->out, ".wf_cpdone:\n");
     fprintf(cg->out, "  movb $0, (%%r9,%%r10,1)\n");
-    fprintf(cg->out, "  mov (%rsp), %%rax\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
     fprintf(cg->out, "  mov %%rax, %%r8\n");
     fprintf(cg->out, "  shr $8, %%r8\n");
     fprintf(cg->out, "  mov 8(%%r8), %%r10\n");
@@ -1616,9 +1616,9 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, ".wf_fail:\n");
     fprintf(cg->out, "  mov $-254, %%r12\n");
     fprintf(cg->out, ".wf_done:\n");
-    fprintf(cg->out, "  mov 8(%rsp), %%rax\n");
+    fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
     fprintf(cg->out, "  call _decref\n");
-    fprintf(cg->out, "  mov (%rsp), %%rax\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
     fprintf(cg->out, "  call _decref\n");
     fprintf(cg->out, "  add $16, %%rsp\n");
     fprintf(cg->out, "  mov %%r12, %%rax\n");
