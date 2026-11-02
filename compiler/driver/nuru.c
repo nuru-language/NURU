@@ -14,6 +14,7 @@
 #include "../nir/nuru_codegen.h"
 #include "../optimizer/nuru_optimizer.h"
 #include "../object/nuru_object.h"
+#include "nuru_import.h"
 
 typedef struct {
     int show_tokens;
@@ -121,6 +122,21 @@ int main(int argc, char** argv) {
     char* source = read_file(opts.input_file, &source_size);
     if (!source) {
         return 1;
+    }
+
+    {
+        char errmsg[256];
+        size_t expanded_size;
+        char* expanded = nuru_expand_imports(source, source_size, &expanded_size,
+                                             "stdlib", errmsg, sizeof(errmsg));
+        if (!expanded) {
+            fprintf(stderr, "Import error: %s\n", errmsg);
+            free(source);
+            return 1;
+        }
+        free(source);
+        source = expanded;
+        source_size = expanded_size;
     }
 
     Lexer lexer;
