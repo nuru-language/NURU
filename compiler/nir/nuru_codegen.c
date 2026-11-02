@@ -176,6 +176,13 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                         fprintf(cg->out, "  mov %%rax, _err_jmp(%%rip)\n");
                     }
                     break;
+
+                case NIR_LOAD_ERR:
+                    fprintf(cg->out, "  mov _err_value(%%rip), %%rax\n");
+                    fprintf(cg->out, "  xor %%ecx, %%ecx\n");
+                    fprintf(cg->out, "  mov %%rcx, _err_value(%%rip)\n");
+                    fprintf(cg->out, "  push %%rax\n");
+                    break;
                     
                 case NIR_NEG:
                     fprintf(cg->out, "  pop %%rax\n");
