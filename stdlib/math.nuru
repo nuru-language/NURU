@@ -1,0 +1,21 @@
+create square using x {
+    give x times x
+}
+
+create cube using x {
+    give x times x times x
+}
+
+create clamp using x, lo, hi {
+    when x is below lo {
+        give lo
+    }
+    otherwise {
+        when x is above hi {
+            give hi
+        }
+        otherwise {
+            give x
+        }
+    }
+}
