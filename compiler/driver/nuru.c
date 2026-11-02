@@ -21,6 +21,7 @@ typedef struct {
     int show_semantic;
     int show_ir;
     int show_help;
+    int disable_opt;
     const char* input_file;
     const char* output_file;
 } CompilerOptions;
@@ -34,6 +35,7 @@ static void print_help(const char* program) {
     printf("  -s, --semantic  Show semantic analysis\n");
     printf("  -i, --ir        Show IR\n");
     printf("  -o <file>       Output file\n");
+    printf("  -O0             Disable NIR optimization (default: on)\n");
     printf("  -h, --help      Show this help\n");
 }
 
@@ -53,6 +55,8 @@ static int parse_args(CompilerOptions* opts, int argc, char** argv) {
             opts->output_file = argv[++i];
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             opts->show_help = 1;
+        } else if (strcmp(argv[i], "-O0") == 0) {
+            opts->disable_opt = 1;
         } else if (argv[i][0] != '-') {
             opts->input_file = argv[i];
         }
@@ -211,7 +215,9 @@ int main(int argc, char** argv) {
     // Generate IR
     IRGen* irgen = irgen_create();
     NIRProgram* ir = irgen_lower(irgen, ast);
-    /* nir_optimize(ir); */
+    if (!opts.disable_opt) {
+        nir_optimize(ir);
+    }
 
     if (opts.show_ir) {
         nir_print_program(ir);
