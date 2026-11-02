@@ -12,6 +12,7 @@ typedef struct {
     NIRBasicBlock* break_blocks[32];
     NIRBasicBlock* continue_blocks[32];
     int loop_depth;
+    int current_line;
 } IRGen;
 
 IRGen* irgen_create(void);

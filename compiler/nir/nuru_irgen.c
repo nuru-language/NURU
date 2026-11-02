@@ -9,7 +9,7 @@ static NIRBasicBlock* make_block(IRGen* irgen, const char* name) {
 }
 
 static void emit(IRGen* irgen, NIROpcode op, NIRValue* a, NIRValue* b, NIRBasicBlock* target) {
-    nir_emit(irgen->current_block, op, a, b, target, 0);
+    nir_emit(irgen->current_block, op, a, b, target, irgen->current_line);
 }
 
 static void emit_call(IRGen* irgen, const char* name, NIRValue* argc) {
@@ -22,6 +22,7 @@ static void emit_stmt(IRGen* irgen, ASTNode* node);
 
 static void emit_expr(IRGen* irgen, ASTNode* node) {
     if (!node) return;
+    irgen->current_line = node->line;
     
     switch (node->type) {
         case AST_INTEGER_LITERAL:

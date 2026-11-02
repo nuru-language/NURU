@@ -98,6 +98,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rdx\n");
                     fprintf(cg->out, "  add %%rdx, %%rax\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -110,6 +111,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rdx\n");
                     fprintf(cg->out, "  sub %%rdx, %%rax\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -121,6 +123,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  pop %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rdx\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _checked_mul\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -132,6 +135,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  pop %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rcx\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _checked_div\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -143,6 +147,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  pop %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rcx\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _checked_mod\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -190,6 +195,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  pop %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  neg %%rax\n");
+                    fprintf(cg->out, "  mov $%d, _err_line(%%rip)\n", instr->line);
                     fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
@@ -739,10 +745,15 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                         int kidx = get_const_index(cg, instr->b);
                         int lbl = cg->label_counter++;
                         int is_message = 0;
-                        if (instr->b && instr->b->kind == NIR_CONST_STR &&
-                            instr->b->string_value.length == 7 &&
-                            memcmp(instr->b->string_value.data, "message", 7) == 0) {
-                            is_message = 1;
+                        int is_line = 0;
+                        if (instr->b && instr->b->kind == NIR_CONST_STR) {
+                            if (instr->b->string_value.length == 7 &&
+                                memcmp(instr->b->string_value.data, "message", 7) == 0) {
+                                is_message = 1;
+                            } else if (instr->b->string_value.length == 4 &&
+                                       memcmp(instr->b->string_value.data, "line", 4) == 0) {
+                                is_line = 1;
+                            }
                         }
                         fprintf(cg->out, "  pop %%r11\n");               /* map or error */
                         fprintf(cg->out, "  mov %%r11, %%rax\n");
@@ -751,7 +762,10 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                         fprintf(cg->out, "  jne .lf_map_%d\n", lbl);
                         /* error object */
                         fprintf(cg->out, "  shr $8, %%r11\n");
-                        if (is_message) {
+                        if (is_line) {
+                            fprintf(cg->out, "  mov 24(%%r11), %%rax\n");
+                            fprintf(cg->out, "  call _incref\n");
+                        } else if (is_message) {
                             fprintf(cg->out, "  mov 8(%%r11), %%rax\n");
                             fprintf(cg->out, "  call _incref\n");
                         } else {
@@ -2049,6 +2063,10 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  mov %%rdi, %%r12\n");
     fprintf(cg->out, "  mov %%rsi, %%r13\n");
     fprintf(cg->out, "  mov %%rdx, %%r14\n");
+    fprintf(cg->out, "  shl $8, %%r13\n");
+    fprintf(cg->out, "  or $2, %%r13\n");
+    fprintf(cg->out, "  shl $8, %%r14\n");
+    fprintf(cg->out, "  or $2, %%r14\n");
     fprintf(cg->out, "  mov $32, %%rdi\n");
     fprintf(cg->out, "  call _alloc\n");
     fprintf(cg->out, "  mov %%rax, %%rbx\n");
