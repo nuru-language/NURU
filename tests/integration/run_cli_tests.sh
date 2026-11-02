@@ -41,6 +41,19 @@ else
     echo "FAIL  cli_run (got '$out')"; fail=$((fail+1))
 fi
 
+# new + directory build/run
+d="$(mktemp -d)"; rm -rf "$d"
+if ./nuru new "$d" >/dev/null 2>&1 &&
+   [[ -f "$d/src/main.nuru" ]] && [[ -f "$d/nuru.toml" ]] &&
+   ./nuru build -o "$d/app" "$d" >/dev/null 2>&1 &&
+   [[ "$("$d/app")" == "Hello, Nuru!" ]] &&
+   [[ "$(./nuru run "$d" 2>/dev/null | tail -1)" == "Hello, Nuru!" ]]; then
+    echo "PASS  cli_new_dir"; pass=$((pass+1))
+else
+    echo "FAIL  cli_new_dir"; fail=$((fail+1))
+fi
+rm -rf "$d"
+
 echo
 echo "cli tests: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
