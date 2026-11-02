@@ -840,7 +840,13 @@ _reverse:
   push %rbx
   push %r12
   push %r13
+  push %r14
+  push %r15
   push %rdi
+  mov %rdi, %rax
+  and $0xff, %eax
+  cmp $5, %rax
+  je .rv_list
   mov %rdi, %r8
   shr $8, %r8
   mov 8(%r8), %r10
@@ -856,22 +862,55 @@ _reverse:
   shr $8, %r8
   lea 16(%r8), %r8
   xor %r12, %r12
-.rv_loop:
+.rv_sloop:
   cmp %r10, %r12
-  jae .rv_done
+  jae .rv_sdone
   mov %r10, %r13
   sub %r12, %r13
   dec %r13
   movb (%r8,%r13,1), %al
   movb %al, 16(%rbx,%r12,1)
   inc %r12
-  jmp .rv_loop
-.rv_done:
+  jmp .rv_sloop
+.rv_sdone:
   mov %rdi, %rax
   call _decref
   mov %rbx, %rax
   shl $8, %rax
   or $4, %rax
+  jmp .rv_out
+.rv_list:
+  mov %rdi, %r8
+  shr $8, %r8
+  mov 8(%r8), %r12
+  lea 16(%r8), %r13
+  lea 16(,%r12,8), %rdi
+  call _alloc
+  mov %rax, %rbx
+  movq $1, (%rbx)
+  mov %r12, 8(%rbx)
+  xor %r14, %r14
+.rv_lloop:
+  cmp %r12, %r14
+  jae .rv_ldone
+  mov %r12, %r15
+  sub %r14, %r15
+  dec %r15
+  mov (%r13,%r15,8), %rax
+  call _incref
+  mov %rax, 16(%rbx,%r14,8)
+  inc %r14
+  jmp .rv_lloop
+.rv_ldone:
+  mov (%rsp), %rax
+  call _decref
+  add $8, %rsp
+  mov %rbx, %rax
+  shl $8, %rax
+  or $5, %rax
+.rv_out:
+  pop %r15
+  pop %r14
   pop %r13
   pop %r12
   pop %rbx
@@ -910,6 +949,176 @@ _parse_int:
 .pl_done:
   imul %r8, %rcx
   mov %rcx, %rax
+  ret
+
+.globl _str_eq_bool
+_str_eq_bool:
+  mov %rdi, %r8
+  shr $8, %r8
+  mov %rsi, %r9
+  shr $8, %r9
+  mov 8(%r8), %r10
+  mov 8(%r9), %r11
+  cmp %r11, %r10
+  jne .seq_false
+  lea 16(%r8), %r8
+  lea 16(%r9), %r9
+  xor %rcx, %rcx
+.seq_loop:
+  cmp %r10, %rcx
+  jae .seq_true
+  movb (%r8,%rcx), %al
+  cmpb (%r9,%rcx), %al
+  jne .seq_false
+  inc %rcx
+  jmp .seq_loop
+.seq_true:
+  mov $1, %rax
+  ret
+.seq_false:
+  xor %eax, %eax
+  ret
+
+.globl _index_get
+_index_get:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  push %rdi
+  push %rsi
+  mov %rdi, %rax
+  and $0xff, %eax
+  cmp $5, %rax
+  je .ig_list
+  cmp $6, %rax
+  je .ig_map
+  jmp .ig_zero
+.ig_list:
+  mov 8(%rsp), %rax
+  shr $8, %rax
+  mov (%rsp), %rcx
+  sar $8, %rcx
+  test %rcx, %rcx
+  js .ig_zero
+  mov 8(%rax), %rdx
+  cmp %rdx, %rcx
+  jge .ig_zero
+  mov 16(%rax,%rcx,8), %rax
+  call _incref
+  jmp .ig_finish
+.ig_map:
+  mov 8(%rsp), %rax
+  shr $8, %rax
+  mov 8(%rax), %r13
+  lea 16(%rax), %r12
+  xor %r15, %r15
+.ig_search:
+  cmp %r13, %r15
+  jge .ig_zero
+  lea (%r15,%r15), %rax
+  mov (%r12,%rax,8), %rbx
+  mov %rbx, %rdi
+  mov (%rsp), %rsi
+  call _str_eq_bool
+  test %rax, %rax
+  jnz .ig_found
+  inc %r15
+  jmp .ig_search
+.ig_found:
+  lea (%r15,%r15), %rax
+  mov 8(%r12,%rax,8), %rax
+  call _incref
+  jmp .ig_finish
+.ig_zero:
+  mov $2, %rax
+.ig_finish:
+  mov %rax, %r8
+  mov 8(%rsp), %rax
+  call _decref
+  mov (%rsp), %rax
+  call _decref
+  add $16, %rsp
+  mov %r8, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
+  ret
+
+.globl _remove
+_remove:
+  push %rbx
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  push %rdi
+  push %rsi
+  mov %rdi, %rax
+  shr $8, %rax
+  mov %rax, %rbx
+  mov 8(%rbx), %r12
+  mov $-1, %r14
+  xor %r15, %r15
+.rm_find:
+  cmp %r12, %r15
+  jae .rm_finddone
+  mov 16(%rbx,%r15,8), %rax
+  cmp (%rsp), %rax
+  je .rm_found
+  inc %r15
+  jmp .rm_find
+.rm_found:
+  mov %r15, %r14
+.rm_finddone:
+  mov %r12, %rax
+  test %r14, %r14
+  js .rm_cnt
+  dec %rax
+.rm_cnt:
+  push %rax
+  lea 16(,%rax,8), %rdi
+  call _alloc
+  mov %rax, %r13
+  pop %rax
+  movq $1, (%r13)
+  mov %rax, 8(%r13)
+  xor %r15, %r15
+.rm_cp:
+  cmp %r12, %r15
+  jae .rm_cpdone
+  cmp %r14, %r15
+  je .rm_skip
+  mov 16(%rbx,%r15,8), %rax
+  call _incref
+  mov %r15, %rcx
+  test %r14, %r14
+  js .rm_wdst
+  cmp %r14, %rcx
+  jl .rm_wdst
+  dec %rcx
+.rm_wdst:
+  mov %rax, 16(%r13,%rcx,8)
+.rm_skip:
+  inc %r15
+  jmp .rm_cp
+.rm_cpdone:
+  mov 8(%rsp), %rax
+  call _decref
+  mov (%rsp), %rax
+  call _decref
+  add $16, %rsp
+  mov %r13, %rax
+  shl $8, %rax
+  or $5, %rax
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %rbx
   ret
 
 .globl _alloc

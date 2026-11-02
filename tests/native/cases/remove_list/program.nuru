@@ -1,0 +1,10 @@
+create main {
+    make xs be [1, 2, 3, 2]
+    make ys be remove with xs, 2
+    show len with ys
+    show ys[0]
+    show ys[1]
+    show ys[2]
+    show len with xs
+    show len with remove with xs, 99
+}
