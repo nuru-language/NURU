@@ -147,6 +147,13 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  push %%rax\n");
                     break;
                     
+                case NIR_REMOVE:
+                    fprintf(cg->out, "  pop %%rsi\n");
+                    fprintf(cg->out, "  pop %%rdi\n");
+                    fprintf(cg->out, "  call _remove\n");
+                    fprintf(cg->out, "  push %%rax\n");
+                    break;
+
                 case NIR_ERR_SAVE:
                     {
                         int slot = get_var_slot(func, instr->a->name);
@@ -1848,6 +1855,83 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  call _decref\n");
     fprintf(cg->out, "  add $16, %%rsp\n");
     fprintf(cg->out, "  mov %%r8, %%rax\n");
+    fprintf(cg->out, "  pop %%r15\n");
+    fprintf(cg->out, "  pop %%r14\n");
+    fprintf(cg->out, "  pop %%r13\n");
+    fprintf(cg->out, "  pop %%r12\n");
+    fprintf(cg->out, "  pop %%rbx\n");
+    fprintf(cg->out, "  ret\n");
+
+    /* Pure list removal: returns a new list containing the elements of the
+     * input list except the first that equals value (tagged-word equality).
+     * The original list is left unchanged. rdi = list (tagged), rsi = value.
+     * Returns the new list (tagged). */
+    fprintf(cg->out, "\n.globl _remove\n");
+    fprintf(cg->out, "_remove:\n");
+    fprintf(cg->out, "  push %%rbx\n");
+    fprintf(cg->out, "  push %%r12\n");
+    fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  push %%r14\n");
+    fprintf(cg->out, "  push %%r15\n");
+    fprintf(cg->out, "  push %%rdi\n");
+    fprintf(cg->out, "  push %%rsi\n");
+    fprintf(cg->out, "  mov %%rdi, %%rax\n");
+    fprintf(cg->out, "  shr $8, %%rax\n");
+    fprintf(cg->out, "  mov %%rax, %%rbx\n");
+    fprintf(cg->out, "  mov 8(%%rbx), %%r12\n");
+    fprintf(cg->out, "  mov $-1, %%r14\n");
+    fprintf(cg->out, "  xor %%r15, %%r15\n");
+    fprintf(cg->out, ".rm_find:\n");
+    fprintf(cg->out, "  cmp %%r12, %%r15\n");
+    fprintf(cg->out, "  jae .rm_finddone\n");
+    fprintf(cg->out, "  mov 16(%%rbx,%%r15,8), %%rax\n");
+    fprintf(cg->out, "  cmp (%%rsp), %%rax\n");
+    fprintf(cg->out, "  je .rm_found\n");
+    fprintf(cg->out, "  inc %%r15\n");
+    fprintf(cg->out, "  jmp .rm_find\n");
+    fprintf(cg->out, ".rm_found:\n");
+    fprintf(cg->out, "  mov %%r15, %%r14\n");
+    fprintf(cg->out, ".rm_finddone:\n");
+    fprintf(cg->out, "  mov %%r12, %%rax\n");
+    fprintf(cg->out, "  test %%r14, %%r14\n");
+    fprintf(cg->out, "  js .rm_cnt\n");
+    fprintf(cg->out, "  dec %%rax\n");
+    fprintf(cg->out, ".rm_cnt:\n");
+    fprintf(cg->out, "  push %%rax\n");
+    fprintf(cg->out, "  lea 16(,%%rax,8), %%rdi\n");
+    fprintf(cg->out, "  call _alloc\n");
+    fprintf(cg->out, "  mov %%rax, %%r13\n");
+    fprintf(cg->out, "  pop %%rax\n");
+    fprintf(cg->out, "  movq $1, (%%r13)\n");
+    fprintf(cg->out, "  mov %%rax, 8(%%r13)\n");
+    fprintf(cg->out, "  xor %%r15, %%r15\n");
+    fprintf(cg->out, ".rm_cp:\n");
+    fprintf(cg->out, "  cmp %%r12, %%r15\n");
+    fprintf(cg->out, "  jae .rm_cpdone\n");
+    fprintf(cg->out, "  cmp %%r14, %%r15\n");
+    fprintf(cg->out, "  je .rm_skip\n");
+    fprintf(cg->out, "  mov 16(%%rbx,%%r15,8), %%rax\n");
+    fprintf(cg->out, "  call _incref\n");
+    fprintf(cg->out, "  mov %%r15, %%rcx\n");
+    fprintf(cg->out, "  test %%r14, %%r14\n");
+    fprintf(cg->out, "  js .rm_wdst\n");
+    fprintf(cg->out, "  cmp %%r14, %%rcx\n");
+    fprintf(cg->out, "  jl .rm_wdst\n");
+    fprintf(cg->out, "  dec %%rcx\n");
+    fprintf(cg->out, ".rm_wdst:\n");
+    fprintf(cg->out, "  mov %%rax, 16(%%r13,%%rcx,8)\n");
+    fprintf(cg->out, ".rm_skip:\n");
+    fprintf(cg->out, "  inc %%r15\n");
+    fprintf(cg->out, "  jmp .rm_cp\n");
+    fprintf(cg->out, ".rm_cpdone:\n");
+    fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  add $16, %%rsp\n");
+    fprintf(cg->out, "  mov %%r13, %%rax\n");
+    fprintf(cg->out, "  shl $8, %%rax\n");
+    fprintf(cg->out, "  or $5, %%rax\n");
     fprintf(cg->out, "  pop %%r15\n");
     fprintf(cg->out, "  pop %%r14\n");
     fprintf(cg->out, "  pop %%r13\n");
