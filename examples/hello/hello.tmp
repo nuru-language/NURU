@@ -60,7 +60,6 @@ _str0:
   .quad 0
   .quad 12
   .byte 72,101,108,108,111,44,32,78,117,114,117,33
-_lit_hi:
 _str_true:
   .quad 0
   .quad 4
@@ -77,6 +76,11 @@ _str_err_divzero:
   .quad 0
   .quad 16
   .byte 'd','i','v','i','s','i','o','n',' ','b','y',' ','z','e','r','o'
+_str_err_overflow:
+  .quad 0
+  .quad 16
+  .byte 'i','n','t','e','g','e','r',' ','o','v','e','r','f','l','o','w'
+_lit_hi:
 
 .text
 
@@ -1159,6 +1163,43 @@ _mk_error:
   pop %r12
   pop %rbx
   ret
+
+.globl _raise_overflow
+_raise_overflow:
+  lea _str_err_overflow(%rip), %rdi
+  shl $8, %rdi
+  or $4, %rdi
+  mov $2, %rsi
+  call _mk_error
+  mov %rax, _err_value(%rip)
+  mov _err_jmp(%rip), %rdx
+  test %rdx, %rdx
+  jz .ro_crash
+  jmp *%rdx
+.ro_crash:
+  mov $0, %rax
+  ret
+
+.globl _checked_mul
+_checked_mul:
+  imul %rdx, %rax
+  jo .cmul_of
+  jmp _check_int
+.cmul_of:
+  jmp _raise_overflow
+
+.globl _check_int
+_check_int:
+  mov %rax, %rcx
+  movabs $0x0080000000000000, %rdx
+  add %rdx, %rcx
+  js .ci_fail
+  movabs $0x0100000000000000, %rdx
+  cmp %rdx, %rcx
+  jae .ci_fail
+  ret
+.ci_fail:
+  jmp _raise_overflow
 
 .globl _alloc
 _alloc:

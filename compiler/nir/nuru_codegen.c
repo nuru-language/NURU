@@ -896,7 +896,6 @@ int codegen_emit(CodeGen* cg) {
         }
     }
     
-    fprintf(cg->out, "_lit_hi:\n");
     fprintf(cg->out, "_str_true:\n");
     fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "  .quad 4\n");
@@ -917,6 +916,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "  .quad 16\n");
     fprintf(cg->out, "  .byte 'i','n','t','e','g','e','r',' ','o','v','e','r','f','l','o','w'\n");
+    fprintf(cg->out, "_lit_hi:\n");
     
     fprintf(cg->out, "\n.text\n");
     

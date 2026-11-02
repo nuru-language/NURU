@@ -1,0 +1,6 @@
+create main {
+    make person be map [ items is [10, 20], name is "Amina" ]
+    show person.items[1]
+    show person["items"][0]
+    show person.name
+}

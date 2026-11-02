@@ -1,0 +1,24 @@
+create main {
+    attempt {
+        make x be 36028797018963967
+        show x plus 1
+    }
+    recover e {
+        show e.message
+    }
+    attempt {
+        make y be -36028797018963967
+        show y minus 2
+    }
+    recover e {
+        show e.message
+    }
+    attempt {
+        show 36028797018963967 times 2
+    }
+    recover e {
+        show e.message
+    }
+    show 36028797018963967 plus 0
+    show 0 minus 36028797018963967
+}
