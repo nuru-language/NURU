@@ -57,6 +57,7 @@ typedef enum {
     NIR_ALLOC_MAP,
     NIR_LOAD_MAP_FIELD,
     NIR_APPEND,
+    NIR_REMOVE,
     NIR_ERR_SAVE,
     NIR_ERR_SET,
     NIR_ERR_RESTORE,

@@ -209,6 +209,7 @@ const char* nir_opcode_name(NIROpcode op) {
         case NIR_ALLOC_MAP: return "ALLOC_MAP";
         case NIR_LOAD_MAP_FIELD: return "LOAD_MAP_FIELD";
         case NIR_APPEND: return "APPEND";
+        case NIR_REMOVE: return "REMOVE";
         case NIR_ERR_SAVE: return "ERR_SAVE";
         case NIR_ERR_SET: return "ERR_SET";
         case NIR_ERR_RESTORE: return "ERR_RESTORE";
