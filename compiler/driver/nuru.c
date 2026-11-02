@@ -41,6 +41,7 @@ static void print_help(const char* program) {
     printf("  -o <file>       Output file\n");
     printf("  -O0             Disable NIR optimization (default: on)\n");
     printf("  -S, --stdlib DIR  Module search directory (default: stdlib)\n");
+    printf("  --print-imports   Print resolved module paths and exit\n");
     printf("  -h, --help      Show this help\n");
     printf("  -V, --version   Show version\n");
 }
