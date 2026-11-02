@@ -1,0 +1,6 @@
+bring square from math
+
+create main {
+    show square with 6
+    show square with 0
+}

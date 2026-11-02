@@ -40,8 +40,8 @@ static int set_add(IncludeSet* s, const char* name) {
 /* Parse a `bring` directive. Two forms:
  *   bring <module>
  *   bring <name> from <module>
- * On success sets *nstart/*nlen to the module identifier; if *selective is
- * set, *fstart/*flen hold the selected function name. */
+ * On success sets *nstart / *nlen to the module identifier; if *selective is
+ * set, *fstart / *flen hold the selected function name. */
 static int parse_bring(const char* line, size_t len,
                        size_t* nstart, size_t* nlen,
                        int* selective, size_t* fstart, size_t* flen) {
@@ -382,20 +382,28 @@ char* nuru_expand_imports(const char* src, size_t len, size_t* out_len,
         size_t linelen = end - start;
         if (linelen > 0 && src[end - 1] == '\r') linelen--;
 
-        size_t ns = 0, namelen = 0;
-        if (match_bring(src + start, linelen, &ns, &namelen)) {
+        size_t ns = 0, nlen = 0, fs = 0, fl = 0;
+        int sel = 0;
+        if (parse_bring(src + start, linelen, &ns, &nlen, &sel, &fs, &fl)) {
             char mpath[512];
-            if (!resolve_module(src + start + ns, namelen, stdlib_dir, mpath, sizeof(mpath))) {
+            if (!resolve_module(src + start + ns, nlen, stdlib_dir, mpath, sizeof(mpath))) {
                 char modname[256];
-                if (namelen >= sizeof(modname)) namelen = sizeof(modname) - 1;
-                memcpy(modname, src + start + ns, namelen);
-                modname[namelen] = '\0';
+                size_t mn = nlen;
+                if (mn >= sizeof(modname)) mn = sizeof(modname) - 1;
+                memcpy(modname, src + start + ns, mn);
+                modname[mn] = '\0';
                 snprintf(errbuf, errcap, "module '%s' not found (searched %s/, ./)",
                          modname, stdlib_dir ? stdlib_dir : ".");
                 ok = 0;
                 break;
             }
-            if (!expand_file(mpath, &included, out, stdlib_dir, errbuf, errcap)) {
+            if (sel) {
+                if (!emit_selected(mpath, &included, out, src + start + fs, fl,
+                                   errbuf, errcap)) {
+                    ok = 0;
+                    break;
+                }
+            } else if (!expand_file(mpath, &included, out, stdlib_dir, errbuf, errcap)) {
                 ok = 0;
                 break;
             }

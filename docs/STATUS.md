@@ -94,6 +94,8 @@ nuru check FILE|DIR | test [DIR] | lock [DIR] | doctor | clean | help
   program-literal-table emissions now live behind `runtime/emit_runtime.h` /
   `runtime/platform/linux/emit_runtime.c`. Remaining: move the remaining runtime
   helpers behind the interface; add tracing mark-and-sweep GC.
-- **Phase 8**: namespaces/visibility for modules (not yet implemented).
+- **Phase 8 — in progress.** Module visibility: selective imports
+  (`bring <name> from <module>`) implemented; un-imported module symbols are
+  not visible. Namespace-qualified references (e.g. `m.f`) remain future work.
 - **Phase 7**: Windows x86-64 PE backend (needs a Windows runner).
 - **Phase 10**: extend bootstrap codegen to full self-hosting.

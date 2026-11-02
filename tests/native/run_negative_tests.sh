@@ -57,6 +57,26 @@ check_rejects "toplevel_statement_rejected" \
 ' \
     "top-level statements are not allowed"
 
+# A selective import that is followed by use of a non-imported symbol must fail.
+check_rejects "bring_selective_missing_symbol" \
+    'bring square from math
+
+create main {
+    show clamp with 1, 0, 5
+}
+' \
+    "Call to undeclared function"
+
+# A missing module in a selective import must be a clear error.
+check_rejects "bring_selective_missing_module" \
+    'bring foo from nosuchmodule
+
+create main {
+    show 1
+}
+' \
+    "module 'nosuchmodule' not found"
+
 # A duplicate top-level function definition must be a clear error.
 check_rejects "duplicate_function_rejected" \
     'create f using x {
