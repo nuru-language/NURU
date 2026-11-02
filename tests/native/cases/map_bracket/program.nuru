@@ -1,0 +1,14 @@
+create main {
+    make person be map [
+        name is "Amina",
+        age is 24,
+        city is "Kampala"
+    ]
+    show person["city"]
+    show person["age"]
+    show person["name"]
+    show person["missing"]
+    show person.name
+    make k be concat with "ci", "ty"
+    show person[k]
+}

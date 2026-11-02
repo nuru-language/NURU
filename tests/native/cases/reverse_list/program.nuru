@@ -1,0 +1,9 @@
+create main {
+    make xs be [1, 2, 3]
+    make ys be reverse with xs
+    show ys[0]
+    show ys[1]
+    show ys[2]
+    show len with ys
+    show xs[0]
+}
