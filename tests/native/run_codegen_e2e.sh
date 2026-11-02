@@ -30,6 +30,7 @@ cat > "$TMP/want.txt" <<'EOF'
 30
 4
 99
+ok
 EOF
 
 if diff -u "$TMP/want.txt" "$TMP/out.txt"; then

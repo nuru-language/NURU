@@ -1061,8 +1061,12 @@ create gen_expr using node, vars {
 create gen_show using expr, vars, ctr {
     make c changeable ctr
     when (str_eq with expr.kind, "str") is 1 {
-        make v be expr.value
-        make L be len with v
+        make v changeable expr.value
+        make L changeable len with v
+        when L is at least 2 {
+            change v to substring with v, 1, L minus 1
+            change L to len with v
+        }
         make lbl be concat with "s", to_string with c
         change c to c plus 1
         make lend be concat with lbl, "_end"
@@ -1300,7 +1304,7 @@ create gen_program using progs {
 }
 
 create main {
-    make src be "make a be [10, 20, 30]\nshow at with a, 1\nshow at with a, 2\nmake b be appended with a, 99\nshow len with b\nshow at with b, 3\n"
+    make src be "make a be [10, 20, 30]\nshow at with a, 1\nshow at with a, 2\nmake b be appended with a, 99\nshow len with b\nshow at with b, 3\nshow \"ok\"\n"
     make toks be lex with src
     make progs be parse_program with toks
     make asm be gen_program with progs

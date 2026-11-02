@@ -101,6 +101,20 @@ cp_done:
   lea newline(%rip), %rsi
   mov $1, %rdx
   syscall
+  lea s0(%rip), %rsi
+  jmp s0_end
+s0:
+  .byte 111,107
+s0_end:
+  mov $2, %rdx
+  mov $1, %rax
+  mov $1, %rdi
+  syscall
+  lea newline(%rip), %rsi
+  mov $1, %rdx
+  mov $1, %rax
+  mov $1, %rdi
+  syscall
 .Lmainret:
   mov %rbp, %rsp
   pop %rbp
