@@ -1037,6 +1037,12 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  mov %%rdx, %%rax\n");
     fprintf(cg->out, "  ret\n");
     fprintf(cg->out, ".cm_zero:\n");
+    fprintf(cg->out, "  lea _str_err_divzero(%%rip), %%rdi\n");
+    fprintf(cg->out, "  shl $8, %%rdi\n");
+    fprintf(cg->out, "  or $4, %%rdi\n");
+    fprintf(cg->out, "  mov $1, %%rsi\n");
+    fprintf(cg->out, "  call _mk_error\n");
+    fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
     fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
     fprintf(cg->out, "  test %%rdx, %%rdx\n");
     fprintf(cg->out, "  jz .cm_crash\n");
