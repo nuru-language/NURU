@@ -29,6 +29,7 @@ Commands:
   test [DIR]           Compile and run tests/*.nuru (compare *.expected if present)
   lock [DIR]           Write nuru.lock (resolved module graph); --check verifies
   doctor               Check toolchain and run a smoke compile
+  format [-i] FILE     Normalize whitespace (strip trailing; collapse blank lines)
   clean                Remove build artifacts
   help                 Show this help
 
@@ -204,6 +205,24 @@ EOF
         fi
         rm -f "$tmp" "$tmp.tmp" "$tmp.o"
         [[ "$ok" -eq 1 ]]
+        ;;
+    format)
+        inplace=0
+        if [[ "${1:-}" == "-i" ]]; then inplace=1; shift; fi
+        [[ $# -eq 1 ]] || { echo "format: expected one source file" >&2; exit 1; }
+        [[ -f "$1" ]] || { echo "format: no such file '$1'" >&2; exit 1; }
+        tmp="$(mktemp)"
+        awk '{
+            gsub(/[ \t]+$/, "")
+            if ($0 == "") { if (!prevblank) print ""; prevblank = 1 }
+            else { prevblank = 0; print }
+        }' "$1" > "$tmp"
+        if [[ "$inplace" -eq 1 ]]; then
+            mv "$tmp" "$1"
+        else
+            cat "$tmp"
+        fi
+        rm -f "$tmp"
         ;;
     clean)
         rm -rf "$ROOT/build" "$ROOT/nuruc"
