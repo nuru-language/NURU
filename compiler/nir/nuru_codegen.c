@@ -98,6 +98,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rdx\n");
                     fprintf(cg->out, "  add %%rdx, %%rax\n");
+                    fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
                     fprintf(cg->out, "  push %%rax\n");
@@ -109,20 +110,28 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rdx\n");
                     fprintf(cg->out, "  sub %%rdx, %%rax\n");
+                    fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
                     fprintf(cg->out, "  push %%rax\n");
                     break;
                     
                 case NIR_MUL:
-                    fprintf(cg->out, "  pop %%rdx\n");
-                    fprintf(cg->out, "  pop %%rax\n");
-                    fprintf(cg->out, "  sar $8, %%rax\n");
-                    fprintf(cg->out, "  sar $8, %%rdx\n");
-                    fprintf(cg->out, "  imul %%rdx, %%rax\n");
-                    fprintf(cg->out, "  shl $8, %%rax\n");
-                    fprintf(cg->out, "  or $2, %%rax\n");
-                    fprintf(cg->out, "  push %%rax\n");
+                    {
+                        int lbl = cg->label_counter++;
+                        fprintf(cg->out, "  pop %%rdx\n");
+                        fprintf(cg->out, "  pop %%rax\n");
+                        fprintf(cg->out, "  sar $8, %%rax\n");
+                        fprintf(cg->out, "  sar $8, %%rdx\n");
+                        fprintf(cg->out, "  imul %%rdx, %%rax\n");
+                        fprintf(cg->out, "  jo .mul_of_%d\n", lbl);
+                        fprintf(cg->out, "  call _check_int\n");
+                        fprintf(cg->out, "  shl $8, %%rax\n");
+                        fprintf(cg->out, "  or $2, %%rax\n");
+                        fprintf(cg->out, "  push %%rax\n");
+                        fprintf(cg->out, ".mul_of_%d:\n", lbl);
+                        fprintf(cg->out, "  jmp _raise_overflow\n");
+                    }
                     break;
                     
                 case NIR_DIV:
@@ -188,6 +197,7 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     fprintf(cg->out, "  pop %%rax\n");
                     fprintf(cg->out, "  sar $8, %%rax\n");
                     fprintf(cg->out, "  neg %%rax\n");
+                    fprintf(cg->out, "  call _check_int\n");
                     fprintf(cg->out, "  shl $8, %%rax\n");
                     fprintf(cg->out, "  or $2, %%rax\n");
                     fprintf(cg->out, "  push %%rax\n");
@@ -910,6 +920,10 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "  .quad 16\n");
     fprintf(cg->out, "  .byte 'd','i','v','i','s','i','o','n',' ','b','y',' ','z','e','r','o'\n");
+    fprintf(cg->out, "_str_err_overflow:\n");
+    fprintf(cg->out, "  .quad 0\n");
+    fprintf(cg->out, "  .quad 16\n");
+    fprintf(cg->out, "  .byte 'i','n','t','e','g','e','r',' ','o','v','e','r','f','l','o','w'\n");
     
     fprintf(cg->out, "\n.text\n");
     
@@ -2006,6 +2020,37 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  pop %%r12\n");
     fprintf(cg->out, "  pop %%rbx\n");
     fprintf(cg->out, "  ret\n");
+
+    /* Raise the "integer overflow" runtime error via the active error handler. */
+    fprintf(cg->out, "\n.globl _raise_overflow\n");
+    fprintf(cg->out, "_raise_overflow:\n");
+    fprintf(cg->out, "  lea _str_err_overflow(%%rip), %%rdi\n");
+    fprintf(cg->out, "  shl $8, %%rdi\n");
+    fprintf(cg->out, "  or $4, %%rdi\n");
+    fprintf(cg->out, "  mov $2, %%rsi\n");
+    fprintf(cg->out, "  call _mk_error\n");
+    fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
+    fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
+    fprintf(cg->out, "  test %%rdx, %%rdx\n");
+    fprintf(cg->out, "  jz .ro_crash\n");
+    fprintf(cg->out, "  jmp *%%rdx\n");
+    fprintf(cg->out, ".ro_crash:\n");
+    fprintf(cg->out, "  mov $0, %%rax\n");
+    fprintf(cg->out, "  ret\n");
+
+    /* Check that rax holds a 56-bit integer payload (fits the tagged encoding).
+     * Returns unchanged on success; raises "integer overflow" otherwise. */
+    fprintf(cg->out, "\n.globl _check_int\n");
+    fprintf(cg->out, "_check_int:\n");
+    fprintf(cg->out, "  mov %%rax, %%rcx\n");
+    fprintf(cg->out, "  movabs $0x0080000000000000, %%rdx\n");
+    fprintf(cg->out, "  add %%rdx, %%rcx\n");
+    fprintf(cg->out, "  js .ci_fail\n");
+    fprintf(cg->out, "  cmp $0x0100000000000000, %%rcx\n");
+    fprintf(cg->out, "  jae .ci_fail\n");
+    fprintf(cg->out, "  ret\n");
+    fprintf(cg->out, ".ci_fail:\n");
+    fprintf(cg->out, "  jmp _raise_overflow\n");
 
     fprintf(cg->out, "\n.globl _alloc\n");
     fprintf(cg->out, "_alloc:\n");

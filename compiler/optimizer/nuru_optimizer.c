@@ -2,25 +2,33 @@
 #include "nuru_optimizer.h"
 #include <stdlib.h>
 #include <stdio.h>
+static int fits_int56(int64_t v) {
+    return v >= -((int64_t)1 << 55) && v <= ((int64_t)1 << 55) - 1;
+}
+
 static int fold_value(NIRValue* a, NIRValue* b, NIROpcode op, int64_t* out) {
     if (!a || !b || a->kind != NIR_CONST_INT || b->kind != NIR_CONST_INT) {
         return 0;
     }
     int64_t x = a->integer_value;
     int64_t y = b->integer_value;
+    int64_t r = 0;
     switch (op) {
-        case NIR_ADD: *out = x + y; return 1;
-        case NIR_SUB: *out = x - y; return 1;
-        case NIR_MUL: *out = x * y; return 1;
+        case NIR_ADD: r = x + y; break;
+        case NIR_SUB: r = x - y; break;
+        case NIR_MUL: r = x * y; break;
         case NIR_DIV:
             if (y == 0) return 0;
-            *out = x / y; return 1;
+            r = x / y; break;
         case NIR_MOD:
             if (y == 0) return 0;
-            *out = x % y; return 1;
+            r = x % y; break;
         default:
             return 0;
     }
+    if (!fits_int56(r)) return 0;
+    *out = r;
+    return 1;
 }
 
 static void optimize_block(NIRProgram* program, NIRBasicBlock* block) {
