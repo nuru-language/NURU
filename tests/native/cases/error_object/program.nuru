@@ -1,5 +1,5 @@
 create main {
-    make caught be 0
+    make caught be changeable 0
     attempt {
         make q be 10 divided by 0
         show "unexpected"
