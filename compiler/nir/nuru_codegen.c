@@ -883,6 +883,8 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "_err_value:\n");
     fprintf(cg->out, "  .quad 0\n");
+    fprintf(cg->out, "_err_line:\n");
+    fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "_lit_lo:\n");
     
     for (size_t i = 0; i < cg->program->constant_count; i++) {
@@ -1059,6 +1061,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  shl $8, %%rdi\n");
     fprintf(cg->out, "  or $4, %%rdi\n");
     fprintf(cg->out, "  mov $1, %%rsi\n");
+    fprintf(cg->out, "  mov _err_line(%%rip), %%rdx\n");
     fprintf(cg->out, "  call _mk_error\n");
     fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
     fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
@@ -1097,6 +1100,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  shl $8, %%rdi\n");
     fprintf(cg->out, "  or $4, %%rdi\n");
     fprintf(cg->out, "  mov $1, %%rsi\n");
+    fprintf(cg->out, "  mov _err_line(%%rip), %%rdx\n");
     fprintf(cg->out, "  call _mk_error\n");
     fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
     fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
@@ -2041,17 +2045,21 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  push %%rbx\n");
     fprintf(cg->out, "  push %%r12\n");
     fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  push %%r14\n");
     fprintf(cg->out, "  mov %%rdi, %%r12\n");
     fprintf(cg->out, "  mov %%rsi, %%r13\n");
-    fprintf(cg->out, "  mov $24, %%rdi\n");
+    fprintf(cg->out, "  mov %%rdx, %%r14\n");
+    fprintf(cg->out, "  mov $32, %%rdi\n");
     fprintf(cg->out, "  call _alloc\n");
     fprintf(cg->out, "  mov %%rax, %%rbx\n");
     fprintf(cg->out, "  movq $1, (%%rbx)\n");
     fprintf(cg->out, "  mov %%r12, 8(%%rbx)\n");
     fprintf(cg->out, "  mov %%r13, 16(%%rbx)\n");
+    fprintf(cg->out, "  mov %%r14, 24(%%rbx)\n");
     fprintf(cg->out, "  mov %%rbx, %%rax\n");
     fprintf(cg->out, "  shl $8, %%rax\n");
     fprintf(cg->out, "  or $7, %%rax\n");
+    fprintf(cg->out, "  pop %%r14\n");
     fprintf(cg->out, "  pop %%r13\n");
     fprintf(cg->out, "  pop %%r12\n");
     fprintf(cg->out, "  pop %%rbx\n");
@@ -2064,6 +2072,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  shl $8, %%rdi\n");
     fprintf(cg->out, "  or $4, %%rdi\n");
     fprintf(cg->out, "  mov $2, %%rsi\n");
+    fprintf(cg->out, "  mov _err_line(%%rip), %%rdx\n");
     fprintf(cg->out, "  call _mk_error\n");
     fprintf(cg->out, "  mov %%rax, _err_value(%%rip)\n");
     fprintf(cg->out, "  mov _err_jmp(%%rip), %%rdx\n");
