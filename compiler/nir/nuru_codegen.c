@@ -685,12 +685,9 @@ static void emit_func(CodeGen* cg, NIRFunction* func) {
                     break;
 
                 case NIR_LOAD_ELT_EXPR:
-                    fprintf(cg->out, "  pop %%rcx\n");          /* index */
-                    fprintf(cg->out, "  sar $8, %%rcx\n");
-                    fprintf(cg->out, "  pop %%rdx\n");          /* list */
-                    fprintf(cg->out, "  shr $8, %%rdx\n");
-                    fprintf(cg->out, "  mov 16(%%rdx,%%rcx,8), %%rax\n");
-                    fprintf(cg->out, "  call _incref\n");
+                    fprintf(cg->out, "  pop %%rsi\n");          /* index (key for maps) */
+                    fprintf(cg->out, "  pop %%rdi\n");          /* container (list/map) */
+                    fprintf(cg->out, "  call _index_get\n");
                     fprintf(cg->out, "  push %%rax\n");
                     break;
                     
@@ -1643,7 +1640,13 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  push %%rbx\n");
     fprintf(cg->out, "  push %%r12\n");
     fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  push %%r14\n");
+    fprintf(cg->out, "  push %%r15\n");
     fprintf(cg->out, "  push %%rdi\n");
+    fprintf(cg->out, "  mov %%rdi, %%rax\n");
+    fprintf(cg->out, "  and $0xff, %%eax\n");
+    fprintf(cg->out, "  cmp $5, %%rax\n");
+    fprintf(cg->out, "  je .rv_list\n");
     fprintf(cg->out, "  mov %%rdi, %%r8\n");
     fprintf(cg->out, "  shr $8, %%r8\n");
     fprintf(cg->out, "  mov 8(%%r8), %%r10\n");
@@ -1659,22 +1662,55 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  shr $8, %%r8\n");
     fprintf(cg->out, "  lea 16(%%r8), %%r8\n");
     fprintf(cg->out, "  xor %%r12, %%r12\n");
-    fprintf(cg->out, ".rv_loop:\n");
+    fprintf(cg->out, ".rv_sloop:\n");
     fprintf(cg->out, "  cmp %%r10, %%r12\n");
-    fprintf(cg->out, "  jae .rv_done\n");
+    fprintf(cg->out, "  jae .rv_sdone\n");
     fprintf(cg->out, "  mov %%r10, %%r13\n");
     fprintf(cg->out, "  sub %%r12, %%r13\n");
     fprintf(cg->out, "  dec %%r13\n");
     fprintf(cg->out, "  movb (%%r8,%%r13,1), %%al\n");
     fprintf(cg->out, "  movb %%al, 16(%%rbx,%%r12,1)\n");
     fprintf(cg->out, "  inc %%r12\n");
-    fprintf(cg->out, "  jmp .rv_loop\n");
-    fprintf(cg->out, ".rv_done:\n");
+    fprintf(cg->out, "  jmp .rv_sloop\n");
+    fprintf(cg->out, ".rv_sdone:\n");
     fprintf(cg->out, "  mov %%rdi, %%rax\n");
     fprintf(cg->out, "  call _decref\n");
     fprintf(cg->out, "  mov %%rbx, %%rax\n");
     fprintf(cg->out, "  shl $8, %%rax\n");
     fprintf(cg->out, "  or $4, %%rax\n");
+    fprintf(cg->out, "  jmp .rv_out\n");
+    fprintf(cg->out, ".rv_list:\n");
+    fprintf(cg->out, "  mov %%rdi, %%r8\n");
+    fprintf(cg->out, "  shr $8, %%r8\n");
+    fprintf(cg->out, "  mov 8(%%r8), %%r10\n");
+    fprintf(cg->out, "  lea 16(%%r8), %%r8\n");
+    fprintf(cg->out, "  lea 16(,%%r10,8), %%rdi\n");
+    fprintf(cg->out, "  call _alloc\n");
+    fprintf(cg->out, "  mov %%rax, %%rbx\n");
+    fprintf(cg->out, "  movq $1, (%%rbx)\n");
+    fprintf(cg->out, "  mov %%r10, 8(%%rbx)\n");
+    fprintf(cg->out, "  xor %%r12, %%r12\n");
+    fprintf(cg->out, ".rv_lloop:\n");
+    fprintf(cg->out, "  cmp %%r10, %%r12\n");
+    fprintf(cg->out, "  jae .rv_ldone\n");
+    fprintf(cg->out, "  mov %%r10, %%r13\n");
+    fprintf(cg->out, "  sub %%r12, %%r13\n");
+    fprintf(cg->out, "  dec %%r13\n");
+    fprintf(cg->out, "  mov (%%r8,%%r13,8), %%rax\n");
+    fprintf(cg->out, "  call _incref\n");
+    fprintf(cg->out, "  mov %%rax, 16(%%rbx,%%r12,8)\n");
+    fprintf(cg->out, "  inc %%r12\n");
+    fprintf(cg->out, "  jmp .rv_lloop\n");
+    fprintf(cg->out, ".rv_ldone:\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  add $8, %%rsp\n");
+    fprintf(cg->out, "  mov %%rbx, %%rax\n");
+    fprintf(cg->out, "  shl $8, %%rax\n");
+    fprintf(cg->out, "  or $5, %%rax\n");
+    fprintf(cg->out, ".rv_out:\n");
+    fprintf(cg->out, "  pop %%r15\n");
+    fprintf(cg->out, "  pop %%r14\n");
     fprintf(cg->out, "  pop %%r13\n");
     fprintf(cg->out, "  pop %%r12\n");
     fprintf(cg->out, "  pop %%rbx\n");
@@ -1714,6 +1750,109 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, ".pl_done:\n");
     fprintf(cg->out, "  imul %%r8, %%rcx\n");
     fprintf(cg->out, "  mov %%rcx, %%rax\n");
+    fprintf(cg->out, "  ret\n");
+
+    /* Exact string equality over two tagged strings. rdi, rsi = tagged.
+     * Returns 1 (tagged) if both are byte-identical strings, else 0. */
+    fprintf(cg->out, "\n.globl _str_eq_bool\n");
+    fprintf(cg->out, "_str_eq_bool:\n");
+    fprintf(cg->out, "  mov %%rdi, %%r8\n");
+    fprintf(cg->out, "  shr $8, %%r8\n");
+    fprintf(cg->out, "  mov %%rsi, %%r9\n");
+    fprintf(cg->out, "  shr $8, %%r9\n");
+    fprintf(cg->out, "  mov 8(%%r8), %%r10\n");
+    fprintf(cg->out, "  mov 8(%%r9), %%r11\n");
+    fprintf(cg->out, "  cmp %%r11, %%r10\n");
+    fprintf(cg->out, "  jne .seq_false\n");
+    fprintf(cg->out, "  lea 16(%%r8), %%r8\n");
+    fprintf(cg->out, "  lea 16(%%r9), %%r9\n");
+    fprintf(cg->out, "  xor %%rcx, %%rcx\n");
+    fprintf(cg->out, ".seq_loop:\n");
+    fprintf(cg->out, "  cmp %%r10, %%rcx\n");
+    fprintf(cg->out, "  jae .seq_true\n");
+    fprintf(cg->out, "  movb (%%r8,%%rcx), %%al\n");
+    fprintf(cg->out, "  cmpb (%%r9,%%rcx), %%al\n");
+    fprintf(cg->out, "  jne .seq_false\n");
+    fprintf(cg->out, "  inc %%rcx\n");
+    fprintf(cg->out, "  jmp .seq_loop\n");
+    fprintf(cg->out, ".seq_true:\n");
+    fprintf(cg->out, "  mov $1, %%rax\n");
+    fprintf(cg->out, "  ret\n");
+    fprintf(cg->out, ".seq_false:\n");
+    fprintf(cg->out, "  xor %%eax, %%eax\n");
+    fprintf(cg->out, "  ret\n");
+
+    /* Container element lookup with runtime dispatch. rdi = container (tagged),
+     * rsi = index/key (tagged). For lists the index must be an integer; for maps
+     * the key must be a string. Returns the element (incref'd) or 0 when the
+     * index/key is invalid or missing. Owns and releases both inputs. */
+    fprintf(cg->out, "\n.globl _index_get\n");
+    fprintf(cg->out, "_index_get:\n");
+    fprintf(cg->out, "  push %%rbx\n");
+    fprintf(cg->out, "  push %%r12\n");
+    fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  push %%r14\n");
+    fprintf(cg->out, "  push %%r15\n");
+    fprintf(cg->out, "  push %%rdi\n");
+    fprintf(cg->out, "  push %%rsi\n");
+    fprintf(cg->out, "  mov %%rdi, %%rax\n");
+    fprintf(cg->out, "  and $0xff, %%eax\n");
+    fprintf(cg->out, "  cmp $5, %%rax\n");
+    fprintf(cg->out, "  je .ig_list\n");
+    fprintf(cg->out, "  cmp $6, %%rax\n");
+    fprintf(cg->out, "  je .ig_map\n");
+    fprintf(cg->out, "  jmp .ig_zero\n");
+    fprintf(cg->out, ".ig_list:\n");
+    fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
+    fprintf(cg->out, "  shr $8, %%rax\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rcx\n");
+    fprintf(cg->out, "  sar $8, %%rcx\n");
+    fprintf(cg->out, "  test %%rcx, %%rcx\n");
+    fprintf(cg->out, "  js .ig_zero\n");
+    fprintf(cg->out, "  mov 8(%%rax), %%rdx\n");
+    fprintf(cg->out, "  cmp %%rdx, %%rcx\n");
+    fprintf(cg->out, "  jge .ig_zero\n");
+    fprintf(cg->out, "  mov 16(%%rax,%%rcx,8), %%rax\n");
+    fprintf(cg->out, "  call _incref\n");
+    fprintf(cg->out, "  jmp .ig_finish\n");
+    fprintf(cg->out, ".ig_map:\n");
+    fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
+    fprintf(cg->out, "  shr $8, %%rax\n");
+    fprintf(cg->out, "  mov 8(%%rax), %%r13\n");
+    fprintf(cg->out, "  lea 16(%%rax), %%r12\n");
+    fprintf(cg->out, "  xor %%r15, %%r15\n");
+    fprintf(cg->out, ".ig_search:\n");
+    fprintf(cg->out, "  cmp %%r13, %%r15\n");
+    fprintf(cg->out, "  jge .ig_zero\n");
+    fprintf(cg->out, "  lea (%%r15,%%r15), %%rax\n");
+    fprintf(cg->out, "  mov (%%r12,%%rax,8), %%rbx\n");
+    fprintf(cg->out, "  mov %%rbx, %%rdi\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rsi\n");
+    fprintf(cg->out, "  call _str_eq_bool\n");
+    fprintf(cg->out, "  test %%rax, %%rax\n");
+    fprintf(cg->out, "  jnz .ig_found\n");
+    fprintf(cg->out, "  inc %%r15\n");
+    fprintf(cg->out, "  jmp .ig_search\n");
+    fprintf(cg->out, ".ig_found:\n");
+    fprintf(cg->out, "  lea (%%r15,%%r15), %%rax\n");
+    fprintf(cg->out, "  mov 8(%%r12,%%rax,8), %%rax\n");
+    fprintf(cg->out, "  call _incref\n");
+    fprintf(cg->out, "  jmp .ig_finish\n");
+    fprintf(cg->out, ".ig_zero:\n");
+    fprintf(cg->out, "  mov $0, %%rax\n");
+    fprintf(cg->out, ".ig_finish:\n");
+    fprintf(cg->out, "  mov %%rax, %%r8\n");
+    fprintf(cg->out, "  mov 8(%%rsp), %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  mov (%%rsp), %%rax\n");
+    fprintf(cg->out, "  call _decref\n");
+    fprintf(cg->out, "  add $16, %%rsp\n");
+    fprintf(cg->out, "  mov %%r8, %%rax\n");
+    fprintf(cg->out, "  pop %%r15\n");
+    fprintf(cg->out, "  pop %%r14\n");
+    fprintf(cg->out, "  pop %%r13\n");
+    fprintf(cg->out, "  pop %%r12\n");
+    fprintf(cg->out, "  pop %%rbx\n");
     fprintf(cg->out, "  ret\n");
 
     fprintf(cg->out, "\n.globl _alloc\n");
