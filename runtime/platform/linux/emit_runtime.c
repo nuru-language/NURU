@@ -1297,7 +1297,6 @@ void nuru_emit_rt_helpers(FILE* out) {
     fprintf(out, "  mov %%rax, _gc_free(%%rip)\n");
     fprintf(out, ".af_use:\n");
     fprintf(out, "  movq $0, 16(%%r9)\n");
-    fprintf(out, "  movq $0, _gc_attempted(%%rip)\n");
     fprintf(out, "  lea 32(%%r9), %%rax\n");
     fprintf(out, "  ret\n");
     fprintf(out, ".af_bump:\n");
@@ -1305,13 +1304,8 @@ void nuru_emit_rt_helpers(FILE* out) {
     fprintf(out, "  lea (%%r9,%%r8), %%r10\n");
     fprintf(out, "  cmp _gc_hi(%%rip), %%r10\n");
     fprintf(out, "  jbe .af_bumpok\n");
-    fprintf(out, "  cmpq $0, _gc_attempted(%%rip)\n");
-    fprintf(out, "  jne .af_fail\n");
-    fprintf(out, "  movq $1, _gc_attempted(%%rip)\n");
-    fprintf(out, "  call _gc_collect\n");
-    fprintf(out, "  jmp .af_loop\n");
+    fprintf(out, "  jmp .af_fail\n");
     fprintf(out, ".af_bumpok:\n");
-    fprintf(out, "  movq $0, _gc_attempted(%%rip)\n");
     fprintf(out, "  mov %%r8, 8(%%r9)\n");
     fprintf(out, "  mov %%r10, _gc_top(%%rip)\n");
     fprintf(out, "  lea 32(%%r9), %%rax\n");
