@@ -891,54 +891,8 @@ int codegen_emit(CodeGen* cg) {
         }
     }
     
-    fprintf(cg->out, "\n.data\n");
-    fprintf(cg->out, "_newline:\n");
-    fprintf(cg->out, "  .byte 10\n");
-    fprintf(cg->out, "_err_jmp:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "_err_value:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "_err_line:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "_lit_lo:\n");
-    
-    for (size_t i = 0; i < cg->program->constant_count; i++) {
-        if (cg->program->constants[i]->kind == NIR_CONST_STR) {
-            fprintf(cg->out, "_str%d:\n", (int)i);
-            fprintf(cg->out, "  .quad 0\n");
-            fprintf(cg->out, "  .quad %zu\n", cg->program->constants[i]->string_value.length);
-            fprintf(cg->out, "  .byte ");
-            const unsigned char* d = (const unsigned char*)cg->program->constants[i]->string_value.data;
-            size_t l = cg->program->constants[i]->string_value.length;
-            for (size_t k = 0; k < l; k++) {
-                fprintf(cg->out, "%s%u", k ? "," : "", (unsigned)d[k]);
-            }
-            fprintf(cg->out, "\n");
-        }
-    }
-    
-    fprintf(cg->out, "_str_true:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "  .quad 4\n");
-    fprintf(cg->out, "  .byte 't','r','u','e'\n");
-    fprintf(cg->out, "_str_false:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "  .quad 5\n");
-    fprintf(cg->out, "  .byte 'f','a','l','s','e'\n");
-    fprintf(cg->out, "_str_empty:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "  .quad 5\n");
-    fprintf(cg->out, "  .byte 'e','m','p','t','y'\n");
-    fprintf(cg->out, "_str_err_divzero:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "  .quad 16\n");
-    fprintf(cg->out, "  .byte 'd','i','v','i','s','i','o','n',' ','b','y',' ','z','e','r','o'\n");
-    fprintf(cg->out, "_str_err_overflow:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "  .quad 16\n");
-    fprintf(cg->out, "  .byte 'i','n','t','e','g','e','r',' ','o','v','e','r','f','l','o','w'\n");
-    fprintf(cg->out, "_lit_hi:\n");
-    
+    nuru_emit_literal_data(cg->out, cg->program);
+
     fprintf(cg->out, "\n.text\n");
     
     fprintf(cg->out, "\n.globl _print_int\n");
