@@ -1,0 +1,12 @@
+create main {
+    make keep be []
+    make i changeable 0
+    while i is below 4000 {
+        make row be [i, i times 2, i times 3]
+        add row to keep
+        change i to i plus 1
+    }
+    show len with keep
+    show keep[3999][2]
+    show len with keep[0]
+}
