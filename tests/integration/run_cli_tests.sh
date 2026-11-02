@@ -96,6 +96,13 @@ else
 fi
 rm -rf "$d"
 
+# doctor
+if ./nuru doctor >/dev/null 2>&1; then
+    echo "PASS  cli_doctor"; pass=$((pass+1))
+else
+    echo "FAIL  cli_doctor"; fail=$((fail+1))
+fi
+
 echo
 echo "cli tests: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

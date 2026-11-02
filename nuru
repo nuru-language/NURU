@@ -28,6 +28,7 @@ Commands:
   check FILE           Compile FILE without emitting an executable
   test [DIR]           Compile and run tests/*.nuru (compare *.expected if present)
   lock [DIR]           Write nuru.lock (resolved module graph); --check verifies
+  doctor               Check toolchain and run a smoke compile
   clean                Remove build artifacts
   help                 Show this help
 
@@ -178,6 +179,31 @@ EOF
         done
         echo "test: $tpass passed, $tfail failed"
         [[ "$tfail" -eq 0 ]]
+        ;;
+    doctor)
+        ok=1
+        if [[ -x "$NURUC" ]]; then
+            echo "ok   nuruc found ($NURUC)"
+            "$NURUC" --version >/dev/null 2>&1 && echo "ok   nuruc runs" || { echo "FAIL nuruc --version"; ok=0; }
+        else
+            echo "FAIL nuruc not found (build with 'make')"; ok=0
+        fi
+        for tool in as ld; do
+            if command -v "$tool" >/dev/null 2>&1; then
+                echo "ok   $tool found"
+            else
+                echo "FAIL $tool not found"; ok=0
+            fi
+        done
+        tmp="$(mktemp)"
+        if "$NURUC" -o "$tmp" "$ROOT/examples/hello/hello.nuru" >/dev/null 2>&1 && \
+           [[ "$("$tmp")" == "Hello, Nuru!" ]]; then
+            echo "ok   smoke compile+run"
+        else
+            echo "FAIL smoke compile+run"; ok=0
+        fi
+        rm -f "$tmp" "$tmp.tmp" "$tmp.o"
+        [[ "$ok" -eq 1 ]]
         ;;
     clean)
         rm -rf "$ROOT/build" "$ROOT/nuruc"
