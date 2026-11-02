@@ -874,6 +874,8 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  .byte 10\n");
     fprintf(cg->out, "_err_jmp:\n");
     fprintf(cg->out, "  .quad 0\n");
+    fprintf(cg->out, "_err_value:\n");
+    fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "_lit_lo:\n");
     
     for (size_t i = 0; i < cg->program->constant_count; i++) {
@@ -904,6 +906,10 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  .quad 0\n");
     fprintf(cg->out, "  .quad 5\n");
     fprintf(cg->out, "  .byte 'e','m','p','t','y'\n");
+    fprintf(cg->out, "_str_err_divzero:\n");
+    fprintf(cg->out, "  .quad 0\n");
+    fprintf(cg->out, "  .quad 16\n");
+    fprintf(cg->out, "  .byte 'd','i','v','i','s','i','o','n',' ','b','y',' ','z','e','r','o'\n");
     
     fprintf(cg->out, "\n.text\n");
     
@@ -1972,6 +1978,30 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  or $5, %%rax\n");
     fprintf(cg->out, "  pop %%r15\n");
     fprintf(cg->out, "  pop %%r14\n");
+    fprintf(cg->out, "  pop %%r13\n");
+    fprintf(cg->out, "  pop %%r12\n");
+    fprintf(cg->out, "  pop %%rbx\n");
+    fprintf(cg->out, "  ret\n");
+
+    /* Build an Error value (tag 7): object holds a tagged message string at
+     * offset 8 and a tagged category integer at offset 16. rdi = message,
+     * rsi = category. Returns the tagged error object. */
+    fprintf(cg->out, "\n.globl _mk_error\n");
+    fprintf(cg->out, "_mk_error:\n");
+    fprintf(cg->out, "  push %%rbx\n");
+    fprintf(cg->out, "  push %%r12\n");
+    fprintf(cg->out, "  push %%r13\n");
+    fprintf(cg->out, "  mov %%rdi, %%r12\n");
+    fprintf(cg->out, "  mov %%rsi, %%r13\n");
+    fprintf(cg->out, "  mov $24, %%rdi\n");
+    fprintf(cg->out, "  call _alloc\n");
+    fprintf(cg->out, "  mov %%rax, %%rbx\n");
+    fprintf(cg->out, "  movq $1, (%%rbx)\n");
+    fprintf(cg->out, "  mov %%r12, 8(%%rbx)\n");
+    fprintf(cg->out, "  mov %%r13, 16(%%rbx)\n");
+    fprintf(cg->out, "  mov %%rbx, %%rax\n");
+    fprintf(cg->out, "  shl $8, %%rax\n");
+    fprintf(cg->out, "  or $7, %%rax\n");
     fprintf(cg->out, "  pop %%r13\n");
     fprintf(cg->out, "  pop %%r12\n");
     fprintf(cg->out, "  pop %%rbx\n");

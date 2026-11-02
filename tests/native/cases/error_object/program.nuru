@@ -1,0 +1,19 @@
+create main {
+    make caught be 0
+    attempt {
+        make q be 10 divided by 0
+        show "unexpected"
+    }
+    recover e {
+        show e.message
+        change caught to 1
+    }
+    show caught
+    attempt {
+        make q be 10 divided by 2
+        show "ok"
+    }
+    recover e {
+        show "should not run"
+    }
+}
