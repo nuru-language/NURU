@@ -39,3 +39,48 @@ create ends_with using s, suffix {
     }
     give str_eq with (substring with s, ls minus l2, ls), suffix
 }
+
+create trim using s {
+    make start changeable 0
+    make n be len with s
+    make end changeable n
+    while start is below n {
+        make c be ord with substring with s, start, start plus 1
+        when c is 32 or c is 9 {
+            change start to start plus 1
+        }
+        otherwise {
+            stop
+        }
+    }
+    while end is above start {
+        make c be ord with substring with s, end minus 1, end
+        when c is 32 or c is 9 {
+            change end to end minus 1
+        }
+        otherwise {
+            stop
+        }
+    }
+    give substring with s, start, end
+}
+
+create split using s, sep {
+    make parts be []
+    make acc changeable ""
+    make i changeable 0
+    make n be len with s
+    while i is below n {
+        make ch be substring with s, i, i plus 1
+        when ch is sep {
+            add acc to parts
+            change acc to ""
+        }
+        otherwise {
+            change acc to concat with acc, ch
+        }
+        change i to i plus 1
+    }
+    add acc to parts
+    give parts
+}
