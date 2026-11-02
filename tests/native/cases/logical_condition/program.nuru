@@ -1,0 +1,32 @@
+create main {
+    make c be 104
+    when c is 32 or c is 9 {
+        show 1
+    }
+    otherwise {
+        show 0
+    }
+    when c is 104 and c is 104 {
+        show 1
+    }
+    otherwise {
+        show 0
+    }
+    when c is 104 or c is 9 {
+        show 1
+    }
+    otherwise {
+        show 0
+    }
+    when (c is 32) or (c is 104) {
+        show 1
+    }
+    otherwise {
+        show 0
+    }
+    make n changeable 0
+    while n is below 3 or n is below 5 {
+        change n to n plus 1
+    }
+    show n
+}

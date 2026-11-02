@@ -72,7 +72,7 @@ create split using s, sep {
     make n be len with s
     while i is below n {
         make ch be substring with s, i, i plus 1
-        when ch is sep {
+        when str_eq with ch, sep {
             add acc to parts
             change acc to ""
         }

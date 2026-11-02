@@ -1,0 +1,12 @@
+bring text
+
+create main {
+    make t be trim with "  hello world  "
+    show t
+    show len with t
+    make p be split with "a,b,c", ","
+    show len with p
+    show p[0]
+    show p[1]
+    show p[2]
+}

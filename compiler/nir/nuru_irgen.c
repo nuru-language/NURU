@@ -358,8 +358,8 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
             
         case AST_IF:
             {
-                NIRBasicBlock* cond_block = irgen->current_block;
                 emit_expr(irgen, node->if_stmt.condition);
+                NIRBasicBlock* cond_block = irgen->current_block;
 
                 NIRBasicBlock* then_block = make_block(irgen, "then");
                 NIRBasicBlock* else_block = make_block(irgen, "else");
@@ -407,8 +407,11 @@ static void emit_stmt(IRGen* irgen, ASTNode* node) {
 
                 irgen->current_block = cond_block;
                 emit_expr(irgen, node->while_stmt.condition);
-                nir_emit(cond_block, NIR_JUMP_IF_FALSE, NULL, NULL, end_block, 0);
-                nir_emit(cond_block, NIR_JUMP, NULL, NULL, body_block, 0);
+                {
+                    NIRBasicBlock* cblock = irgen->current_block;
+                    nir_emit(cblock, NIR_JUMP_IF_FALSE, NULL, NULL, end_block, 0);
+                    nir_emit(cblock, NIR_JUMP, NULL, NULL, body_block, 0);
+                }
 
                 irgen->current_block = body_block;
                 irgen->break_blocks[irgen->loop_depth] = end_block;
