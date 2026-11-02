@@ -970,9 +970,15 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, "  je .raw_bool\n");
     fprintf(cg->out, "  cmp $4, %%rdx\n");
     fprintf(cg->out, "  je .raw_str\n");
+    fprintf(cg->out, "  cmp $7, %%rdx\n");
+    fprintf(cg->out, "  je .raw_err\n");
     fprintf(cg->out, "  cmp $0, %%rdx\n");
     fprintf(cg->out, "  je .raw_empty\n");
     fprintf(cg->out, "  jmp .raw_int\n");
+    fprintf(cg->out, ".raw_err:\n");
+    fprintf(cg->out, "  shr $8, %%rax\n");
+    fprintf(cg->out, "  mov 8(%%rax), %%rax\n");
+    fprintf(cg->out, "  jmp .raw_str\n");
     fprintf(cg->out, ".raw_int:\n");
     fprintf(cg->out, "  sar $8, %%rax\n");
     fprintf(cg->out, "  mov %%rax, %%rdi\n");
