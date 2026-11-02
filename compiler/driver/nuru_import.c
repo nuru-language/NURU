@@ -36,7 +36,7 @@ static int set_add(IncludeSet* s, const char* name) {
 
 /* If the line (len bytes, not newline-terminated) begins with `bring <name>`
  * (after optional whitespace, and followed only by whitespace or a comment),
- * set *start/*namelen to the name span and return 1. */
+ * set *start / *namelen to the name span and return 1. */
 static int match_bring(const char* line, size_t len, size_t* start, size_t* namelen) {
     size_t i = 0;
     while (i < len && (line[i] == ' ' || line[i] == '\t')) i++;
