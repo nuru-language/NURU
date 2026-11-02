@@ -90,8 +90,8 @@ nuru check FILE|DIR | test [DIR] | lock [DIR] | doctor | clean | help
 
 - **Phase 9 — complete.** `nuru.lock` (SHA-256 per module) with `nuru lock`
   / `lock --check`, and `--locked` gating on build/run/check.
-- **Phase 5 — in progress.** Runtime emission extraction began: GC-data
-  emission moved behind `runtime/emit_runtime.h` /
+- **Phase 5 — in progress.** Runtime emission extraction: the GC-data and
+  program-literal-table emissions now live behind `runtime/emit_runtime.h` /
   `runtime/platform/linux/emit_runtime.c`. Remaining: move the remaining runtime
   helpers behind the interface; add tracing mark-and-sweep GC.
 - **Phase 8**: namespaces/visibility for modules (not yet implemented).
