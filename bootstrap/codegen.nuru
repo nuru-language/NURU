@@ -1093,14 +1093,14 @@ create gen_show using expr, vars, ctr {
         make body be concat with pre4, d3
         make body2 be concat with body, post3
         make nl be "  lea newline(%rip), %rsi\n  mov $1, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n"
-        give map [ asm is concat with body2, nl, count is c ]
+        give map [ asm is (concat with body2, nl), count is c ]
     }
     otherwise {
         make e be gen_expr with expr, vars
         make e2 be concat with e, "  mov %rax, %rdi\n"
         make s1 be concat with e2, "  call print_int\n"
         make nl be "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
-        give map [ asm is concat with s1, nl, count is c ]
+        give map [ asm is (concat with s1, nl), count is c ]
     }
 }
 
