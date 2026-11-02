@@ -1058,11 +1058,50 @@ create gen_expr using node, vars {
     }
 }
 
-create gen_show using expr, vars {
-    make e be gen_expr with expr, vars
-    make e2 be concat with e, "  mov %rax, %rdi\n"
-    make s1 be concat with e2, "  call print_int\n"
-    give concat with s1, "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
+create gen_show using expr, vars, ctr {
+    make c changeable ctr
+    when (str_eq with expr.kind, "str") is 1 {
+        make v be expr.value
+        make L be len with v
+        make lbl be concat with "s", to_string with c
+        change c to c plus 1
+        make lend be concat with lbl, "_end"
+        make pre be concat with "  lea ", lbl
+        make pre2 be concat with pre, "(%rip), %rsi\n  jmp "
+        make pre3 be concat with pre2, lend
+        make pre4 be concat with pre3, "\n"
+        make d1 be concat with lbl, ":\n  .byte "
+        make bytes changeable ""
+        make i changeable 0
+        while i is below L {
+            make ch be ord with (substring with v, i, i plus 1)
+            make cs be to_string with ch
+            when i is 0 {
+                change bytes to cs
+            }
+            otherwise {
+                change bytes to concat with bytes, ","
+                change bytes to concat with bytes, cs
+            }
+            change i to i plus 1
+        }
+        make d2 be concat with d1, bytes
+        make d3 be concat with d2, "\n"
+        make post be concat with lend, ":\n  mov $"
+        make post2 be concat with post, to_string with L
+        make post3 be concat with post2, ", %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n"
+        make body be concat with pre4, d3
+        make body2 be concat with body, post3
+        make nl be "  lea newline(%rip), %rsi\n  mov $1, %rdx\n  mov $1, %rax\n  mov $1, %rdi\n  syscall\n"
+        give map [ asm is concat with body2, nl, count is c ]
+    }
+    otherwise {
+        make e be gen_expr with expr, vars
+        make e2 be concat with e, "  mov %rax, %rdi\n"
+        make s1 be concat with e2, "  call print_int\n"
+        make nl be "  mov $1, %rax\n  mov $1, %rdi\n  lea newline(%rip), %rsi\n  mov $1, %rdx\n  syscall\n"
+        give map [ asm is concat with s1, nl, count is c ]
+    }
 }
 
 create gen_block using stmts, vars, ctr, retlabel {
@@ -1070,8 +1109,9 @@ create gen_block using stmts, vars, ctr, retlabel {
     make c changeable ctr
     for each st in stmts {
         when (str_eq with st.kind, "show") is 1 {
-            make gs be gen_show with st.expr, vars
-            change asm to concat with asm, gs
+            make gs be gen_show with st.expr, vars, c
+            change asm to concat with asm, gs.asm
+            change c to gs.count
         }
         otherwise {
             when (str_eq with st.kind, "make") is 1 {
