@@ -11,7 +11,7 @@ OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(filter $(SRC_DIR)/%,$(S
 
 TARGET = nuruc
 
-.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare test-cli
+.PHONY: all clean test test-native test-ast test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc
 
 all: $(TARGET)
 
@@ -30,7 +30,7 @@ $(BUILD_DIR)/runtime/%.o: runtime/%.c
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET)
 
-test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare test-cli
+test: test-native test-ast test-codegen-e2e test-safe-io test-negative test-nir-opt test-opt-compare test-cli test-gc
 
 test-native: $(TARGET)
 	@echo "Running native execution tests..."
