@@ -86,11 +86,14 @@ nuru check FILE|DIR | test [DIR] | lock [DIR] | doctor | clean | help
 - Optimizer parity: `tests/native/run_opt_compare.sh`
 - CLI: `tests/integration/run_cli_tests.sh`
 
-## Remaining roadmap
+## Roadmap status
 
-- Phase 5: extract runtime emission into `runtime/` behind `runtime/runtime.h`;
-  add tracing mark-and-sweep GC.
-- Phase 8: namespaces/visibility for modules.
-- Phase 9: reproducible dependency management / lockfile.
-- Phase 7: Windows x86-64 PE backend (needs a Windows runner).
-- Phase 10: extend bootstrap codegen to full self-hosting.
+- **Phase 9 — complete.** `nuru.lock` (SHA-256 per module) with `nuru lock`
+  / `lock --check`, and `--locked` gating on build/run/check.
+- **Phase 5 — in progress.** Runtime emission extraction began: GC-data
+  emission moved behind `runtime/emit_runtime.h` /
+  `runtime/platform/linux/emit_runtime.c`. Remaining: move the remaining runtime
+  helpers behind the interface; add tracing mark-and-sweep GC.
+- **Phase 8**: namespaces/visibility for modules (not yet implemented).
+- **Phase 7**: Windows x86-64 PE backend (needs a Windows runner).
+- **Phase 10**: extend bootstrap codegen to full self-hosting.
