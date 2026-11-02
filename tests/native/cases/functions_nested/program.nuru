@@ -1,0 +1,11 @@
+create add2 using a, b {
+    give a plus b
+}
+create add3 using a, b, c {
+    give add2 with (add2 with a, b), c
+}
+create main {
+    show add3 with 1, 2, 3
+    make msg be concat with "sum=", to_string with add3 with 4, 5, 6
+    show msg
+}
