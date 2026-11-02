@@ -1,11 +1,13 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -O2 -g -Icompiler
+CFLAGS = -Wall -Wextra -std=c11 -O2 -g -Icompiler -Iruntime
 LDFLAGS =
 
 SRC_DIR = compiler
 BUILD_DIR = build
-SRC_FILES = $(wildcard $(SRC_DIR)/*/*.c) $(wildcard $(SRC_DIR)/*/*/*.c)
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRC_FILES))
+SRC_FILES = $(wildcard $(SRC_DIR)/*/*.c) $(wildcard $(SRC_DIR)/*/*/*.c) \
+            $(wildcard runtime/*/*.c) $(wildcard runtime/*/*/*.c)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(filter $(SRC_DIR)/%,$(SRC_FILES))) \
+            $(patsubst runtime/%.c,$(BUILD_DIR)/runtime/%.o,$(filter runtime/%,$(SRC_FILES)))
 
 TARGET = nuruc
 
@@ -18,6 +20,10 @@ $(TARGET): $(OBJ_FILES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(BUILD_DIR)/runtime/%.o: runtime/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 

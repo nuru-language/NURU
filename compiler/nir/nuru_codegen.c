@@ -1,5 +1,6 @@
 #define _DEFAULT_SOURCE
 #include "nuru_codegen.h"
+#include "emit_runtime.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -2302,19 +2303,7 @@ int codegen_emit(CodeGen* cg) {
     fprintf(cg->out, ".dr_done:\n");
     fprintf(cg->out, "  ret\n");
 
-    fprintf(cg->out, "\n.data\n");
-    fprintf(cg->out, ".align 8\n");
-    fprintf(cg->out, "_gc_heap:\n");
-    fprintf(cg->out, "  .zero 1048576\n");
-    fprintf(cg->out, "_gc_top:\n");
-    fprintf(cg->out, "  .quad _gc_heap\n");
-    fprintf(cg->out, "_gc_free:\n");
-    fprintf(cg->out, "  .quad 0\n");
-    fprintf(cg->out, "_gc_lo:\n");
-    fprintf(cg->out, "  .quad _gc_heap\n");
-    fprintf(cg->out, "_gc_hi:\n");
-    fprintf(cg->out, "  .quad _gc_heap + 1048576\n");
-    fprintf(cg->out, ".text\n");
+    nuru_emit_gc_data(cg->out);
     
     return 0;
 }
